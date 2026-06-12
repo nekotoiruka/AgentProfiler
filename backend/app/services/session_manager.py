@@ -86,7 +86,33 @@ class SessionManager:
           FOREIGN KEY (session_id) REFERENCES sessions(session_id)
         )
       """)
+
+      # マイグレーション: 既存テーブルに不足カラムがあれば追加
+      await self._migrate(db)
+
       await db.commit()
+
+  async def _migrate(self, db: aiosqlite.Connection) -> None:
+    """既存DBのスキーマを最新に合わせるマイグレーション
+
+    ALTER TABLE ADD COLUMN は既に存在するカラムにはエラーを出すため、
+    PRAGMA table_info で既存カラムを確認してから追加する。
+    """
+    # answers テーブルのカラム確認
+    cursor = await db.execute("PRAGMA table_info(answers)")
+    existing_columns = {row[1] for row in await cursor.fetchall()}
+
+    migrations = [
+      ("answers", "selected_options", "TEXT"),
+      ("answers", "free_texts", "TEXT"),
+    ]
+
+    for table, column, col_type in migrations:
+      if column not in existing_columns:
+        await db.execute(
+          f"ALTER TABLE {table} ADD COLUMN {column} {col_type}"
+        )
+        logger.info("Migration: added column %s.%s", table, column)
 
   async def create_session(self) -> str:
     """新規セッションを作成し、セッションIDを返す
