@@ -576,7 +576,8 @@ class TestQuestionDataLoaderValidation:
     assert result[0].questions[0].text == "質問1 オリジナル"
 
   def test_missing_mapping_excluded(self, tmp_path, mapping_loader_for_questions):
-    """Mapping Dictionaryにマッピングがない質問は除外される"""
+    """Mapping Dictionaryにマッピングがない質問はsource_referenceがあれば許可される
+    （persona等の直接マッピング質問として扱われる）"""
     data = {
       "categories": [
         {
@@ -617,8 +618,8 @@ class TestQuestionDataLoaderValidation:
     loader = QuestionDataLoader(file_path, mapping_loader_for_questions)
     result = loader.load()
 
-    assert len(result[0].questions) == 1
-    assert result[0].questions[0].id == "q1"
+    # マッピングなし質問もsource_referenceがあれば許可される（直接マッピング扱い）
+    assert len(result[0].questions) == 2
 
   def test_single_axis_excluded(self, tmp_path, mapping_loader_for_questions):
     """1軸のみ活性化する質問は除外される"""

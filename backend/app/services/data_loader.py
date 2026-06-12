@@ -406,43 +406,36 @@ class QuestionDataLoader:
       )
       return None
 
-    # single_choice型: source_referenceが必須
-    if not question.source_reference:
-      logger.warning(
-        "Skipping question '%s': missing source_reference", question.id
-      )
-      return None
+    # Mapping Dictionary整合性チェック: マッピングが存在する質問のみスコアリング対象
+    has_mapping = all(
+      (question.id, choice.id) in mapping_lookup
+      for choice in question.choices
+    )
 
-    # Mapping Dictionary整合性チェック: 全4選択肢にマッピングが必要
-    missing_mappings = []
-    for choice in question.choices:
-      if (question.id, choice.id) not in mapping_lookup:
-        missing_mappings.append(choice.id)
+    if has_mapping:
+      # スコアリング対象質問: source_reference必須 + 2軸以上活性化チェック
+      if not question.source_reference:
+        logger.warning(
+          "Skipping question '%s': missing source_reference", question.id
+        )
+        return None
 
-    if missing_mappings:
-      logger.warning(
-        "Skipping question '%s': missing mapping for choices %s",
-        question.id,
-        missing_mappings,
-      )
-      return None
+      # 2軸以上の活性化チェック
+      activated_axes = set()
+      for choice in question.choices:
+        scores = mapping_lookup[(question.id, choice.id)]
+        for axis_idx, score in enumerate(scores):
+          if score != 0:
+            activated_axes.add(axis_idx)
 
-    # 2軸以上の活性化チェック
-    # 全選択肢のスコアを集め、少なくとも2軸に非ゼロスコアがあること
-    activated_axes = set()
-    for choice in question.choices:
-      scores = mapping_lookup[(question.id, choice.id)]
-      for axis_idx, score in enumerate(scores):
-        if score != 0:
-          activated_axes.add(axis_idx)
-
-    if len(activated_axes) < 2:
-      logger.warning(
-        "Skipping question '%s': activates only %d axis (requires >= 2)",
-        question.id,
-        len(activated_axes),
-      )
-      return None
+      if len(activated_axes) < 2:
+        logger.warning(
+          "Skipping question '%s': activates only %d axis (requires >= 2)",
+          question.id,
+          len(activated_axes),
+        )
+        return None
+    # else: マッピングなし = persona/tone/values等の直接マッピング質問 → スキップしない
 
     # すべてパス → 登録
     seen_question_ids.add(question.id)

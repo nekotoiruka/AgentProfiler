@@ -145,15 +145,23 @@ class ProfileGenerator:
     questions: list[Question],
   ) -> ProfileOutput:
     """正規化スコアと回答データから完全なプロファイルを生成する"""
+    from app.models.profile import Persona, CommunicationTone, Values
+
     profile_id = self._next_profile_id()
     base_os = self._build_base_os(normalized_scores)
     lexical_tags = self._build_lexical_tags(answers, questions)
     semantic_contexts = self._build_semantic_contexts(
       normalized_scores, lexical_tags
     )
+    persona = self._build_persona(answers, questions)
+    tone = self._build_communication_tone(answers, questions)
+    values = self._build_values(answers, questions)
 
     return ProfileOutput(
       profile_id=profile_id,
+      persona=persona,
+      communication_tone=tone,
+      values=values,
       base_os=base_os,
       lexical_tags=lexical_tags,
       semantic_contexts=semantic_contexts,
@@ -273,13 +281,11 @@ class ProfileGenerator:
     # 質問IDベースのルックアップを構築
     question_map: dict[str, Question] = {q.id: q for q in questions}
 
-    # 回答を処理
+    # 優先度1: multi_select回答のタグを最優先で追加
     for answer in answers:
       question = question_map.get(answer.question_id)
       if not question:
         continue
-
-      # multi_select型: selected_optionsのタグを直接追加
       if question.question_type == "multi_select" and answer.selected_options:
         option_map = {opt.id: opt for opt in question.options}
         for opt_id in answer.selected_options:
@@ -287,16 +293,25 @@ class ProfileGenerator:
           if option:
             for tag in option.tags:
               self._add_tag(tag, tags, seen)
-        continue
 
-      # single_choice型: choice_idがある場合、そのlabelからキーワード抽出
+    # 優先度2: single_choice回答からキーワード抽出
+    for answer in answers:
+      question = question_map.get(answer.question_id)
+      if not question:
+        continue
+      if question.question_type == "multi_select":
+        continue  # 既に処理済み
       if answer.choice_id:
         for choice in question.choices:
           if choice.id == answer.choice_id:
             self._extract_tags_from_label(choice.label, tags, seen)
             break
 
-      # カテゴリ由来のタグ追加
+    # 優先度3: カテゴリ由来のタグ（最低限のパディング）
+    for answer in answers:
+      question = question_map.get(answer.question_id)
+      if not question:
+        continue
       category_id = question.category_id
       if category_id in _CATEGORY_TAGS:
         for tag in _CATEGORY_TAGS[category_id]:
@@ -314,8 +329,8 @@ class ProfileGenerator:
         break
       self._add_tag(tag, tags, seen)
 
-    # 最大50件に制限
-    return tags[:50]
+    # 最大500件に制限
+    return tags[:500]
 
   def _extract_tags_from_label(
     self, label: str, tags: list[str], seen: set[str]
@@ -578,6 +593,102 @@ class ProfileGenerator:
     parts.append(tf_templates[tf])
 
     return "".join(parts)
+
+  def _build_persona(
+    self, answers: list[Answer], questions: list[Question]
+  ) -> "Persona":
+    """persona カテゴリの回答から Persona を構築する"""
+    from app.models.profile import Persona
+
+    question_map = {q.id: q for q in questions}
+    persona_data: dict[str, str] = {}
+
+    # persona カテゴリの質問IDマッピング
+    field_map = {
+      "per_001": "age_range",
+      "per_002": "role",
+      "per_003": "industry",
+      "per_004": "experience_years",
+      "per_005": "nickname",
+    }
+
+    for answer in answers:
+      if answer.question_id in field_map:
+        field_name = field_map[answer.question_id]
+        question = question_map.get(answer.question_id)
+        if answer.text:
+          # Other回答: テキストをそのまま使用
+          persona_data[field_name] = answer.text
+        elif answer.choice_id and question:
+          # 選択肢: ラベルを値として使用
+          for choice in question.choices:
+            if choice.id == answer.choice_id:
+              persona_data[field_name] = choice.label
+              break
+
+    return Persona(**persona_data)
+
+  def _build_communication_tone(
+    self, answers: list[Answer], questions: list[Question]
+  ) -> "CommunicationTone":
+    """communication_tone カテゴリの回答から CommunicationTone を構築する"""
+    from app.models.profile import CommunicationTone
+
+    question_map = {q.id: q for q in questions}
+    tone_data: dict[str, str] = {}
+
+    field_map = {
+      "ton_001": "pronoun",
+      "ton_002": "formality",
+      "ton_003": "text_style",
+      "ton_004": "emotion_level",
+      "ton_005": "humor",
+    }
+
+    for answer in answers:
+      if answer.question_id in field_map:
+        field_name = field_map[answer.question_id]
+        question = question_map.get(answer.question_id)
+        if answer.text:
+          tone_data[field_name] = answer.text
+        elif answer.choice_id and question:
+          for choice in question.choices:
+            if choice.id == answer.choice_id:
+              tone_data[field_name] = choice.label
+              break
+
+    return CommunicationTone(**tone_data)
+
+  def _build_values(
+    self, answers: list[Answer], questions: list[Question]
+  ) -> "Values":
+    """values カテゴリの回答から Values を構築する"""
+    from app.models.profile import Values
+
+    question_map = {q.id: q for q in questions}
+    values_data: dict[str, str] = {}
+
+    field_map = {
+      "val_001": "work_belief",
+      "val_002": "team_stance",
+      "val_003": "conflict_approach",
+      "val_004": "failure_attitude",
+      "val_005": "change_attitude",
+    }
+
+    for answer in answers:
+      if answer.question_id in field_map:
+        field_name = field_map[answer.question_id]
+        question = question_map.get(answer.question_id)
+        if answer.text:
+          values_data[field_name] = answer.text
+        elif answer.choice_id and question:
+          for choice in question.choices:
+            if choice.id == answer.choice_id:
+              values_data[field_name] = choice.label
+              break
+
+    return Values(**values_data)
 
   def _remove_excluded_tokens(
     self, text: str, excluded_tokens: set[str]

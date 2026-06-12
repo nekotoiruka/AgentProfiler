@@ -445,13 +445,37 @@ categories:
           - id: "product_mgmt"
             label: "プロダクトマネジメント"
             tags: ["product-management", "roadmap", "user-research"]
+          - id: "data_engineering"
+            label: "データエンジニアリング"
+            tags: ["data-engineering", "etl", "data-pipeline"]
+          - id: "sre_ops"
+            label: "SRE/運用"
+            tags: ["sre", "reliability", "operations"]
+          - id: "qa_test_automation"
+            label: "QA/テスト自動化"
+            tags: ["qa", "test-automation", "quality"]
+          - id: "ar_vr"
+            label: "AR/VR"
+            tags: ["ar", "vr", "xr", "spatial-computing"]
+          - id: "robotics"
+            label: "ロボティクス"
+            tags: ["robotics", "automation", "control"]
+          - id: "low_level_os"
+            label: "低レイヤー/OS"
+            tags: ["low-level", "os", "systems-programming"]
+          - id: "networking"
+            label: "ネットワーク"
+            tags: ["networking", "protocol", "infrastructure"]
+          - id: "ui_ux_design"
+            label: "UI/UXデザイン"
+            tags: ["ui-design", "ux-design", "user-experience"]
 
       - id: "int_002"
         text: "好きなリフレッシュ方法は？（複数選択可）"
         category_id: "interests"
         question_type: "multi_select"
         min_select: 1
-        max_select: 8
+        max_select: 10
         options:
           - id: "exercise"
             label: "運動・スポーツ"
@@ -483,6 +507,36 @@ categories:
           - id: "socializing"
             label: "人との交流・飲み会"
             tags: ["socializing", "networking"]
+          - id: "movies_drama"
+            label: "映画/ドラマ鑑賞"
+            tags: ["movies", "drama", "streaming"]
+          - id: "diy"
+            label: "DIY/ものづくり"
+            tags: ["diy", "maker", "crafting"]
+          - id: "pets"
+            label: "ペットと過ごす"
+            tags: ["pets", "animals"]
+          - id: "sauna_onsen"
+            label: "サウナ/温泉"
+            tags: ["sauna", "onsen", "relaxation"]
+          - id: "driving"
+            label: "ドライブ"
+            tags: ["driving", "road-trip"]
+          - id: "photography"
+            label: "写真/動画撮影"
+            tags: ["photography", "videography"]
+          - id: "board_games"
+            label: "ボードゲーム/パズル"
+            tags: ["board-games", "puzzles", "tabletop"]
+          - id: "language_learning"
+            label: "語学学習"
+            tags: ["language-learning", "multilingual"]
+          - id: "gardening"
+            label: "ガーデニング"
+            tags: ["gardening", "plants"]
+          - id: "yoga"
+            label: "ヨガ"
+            tags: ["yoga", "stretching", "wellness"]
 
       - id: "int_003"
         text: "仕事で使っている・使いたいツール/環境は？（複数選択可）"
@@ -521,13 +575,43 @@ categories:
           - id: "linux"
             label: "Linux デスクトップ"
             tags: ["linux", "open-source"]
+          - id: "github_copilot_x"
+            label: "GitHub Copilot X"
+            tags: ["github-copilot", "ai-pair-programming"]
+          - id: "slack_teams"
+            label: "Slack/Teams"
+            tags: ["slack", "teams", "communication"]
+          - id: "miro_whiteboard"
+            label: "Miro/ホワイトボード"
+            tags: ["miro", "whiteboard", "visual-collaboration"]
+          - id: "jira_linear"
+            label: "Jira/Linear"
+            tags: ["jira", "linear", "project-management"]
+          - id: "aws_console"
+            label: "AWS Console"
+            tags: ["aws", "cloud-console"]
+          - id: "postman_insomnia"
+            label: "Postman/Insomnia"
+            tags: ["postman", "insomnia", "api-testing"]
+          - id: "terraform_iac"
+            label: "Terraform/IaC"
+            tags: ["terraform", "iac", "infrastructure-as-code"]
+          - id: "obsidian_notes"
+            label: "Obsidian/メモツール"
+            tags: ["obsidian", "note-taking", "knowledge-management"]
+          - id: "chrome_devtools"
+            label: "Chrome DevTools"
+            tags: ["chrome-devtools", "debugging", "browser-tools"]
+          - id: "zsh_fish"
+            label: "zsh/fish"
+            tags: ["zsh", "fish", "shell-customization"]
 
       - id: "int_004"
         text: "好きな作業環境の雰囲気は？（複数選択可）"
         category_id: "interests"
         question_type: "multi_select"
         min_select: 1
-        max_select: 5
+        max_select: 10
         options:
           - id: "quiet_home"
             label: "静かな自宅"
@@ -550,13 +634,52 @@ categories:
           - id: "pair_work"
             label: "誰かと一緒に作業"
             tags: ["pair-work", "collaborative"]
+          - id: "library"
+            label: "図書館"
+            tags: ["library", "quiet-public-space"]
+          - id: "on_the_move"
+            label: "電車/移動中"
+            tags: ["mobile-work", "commute"]
+          - id: "standing_desk"
+            label: "スタンディングデスク"
+            tags: ["standing-desk", "ergonomics"]
+          - id: "multi_monitor"
+            label: "モニター複数台"
+            tags: ["multi-monitor", "wide-display"]
+          - id: "dark_room"
+            label: "暗い部屋"
+            tags: ["dark-mode", "low-light"]
+          - id: "early_morning"
+            label: "朝型(早朝)"
+            tags: ["early-bird", "morning-routine"]
+          - id: "window_bright"
+            label: "窓際の明るい場所"
+            tags: ["natural-light", "window-seat"]
+          - id: "empty_office"
+            label: "誰もいないオフィス"
+            tags: ["empty-office", "solitude"]
+          - id: "cool_temp"
+            label: "温度低め"
+            tags: ["cool-temperature", "air-conditioning"]
+          - id: "focus_bgm"
+            label: "集中BGM(Lo-fi等)"
+            tags: ["lo-fi", "focus-music", "concentration"]
+          - id: "nature_sounds"
+            label: "自然音環境"
+            tags: ["nature-sounds", "white-noise", "asmr"]
+          - id: "pomodoro"
+            label: "ポモドーロ式"
+            tags: ["pomodoro", "time-management", "intervals"]
+          - id: "minimal_desk"
+            label: "ミニマルなデスク"
+            tags: ["minimalism", "clean-desk"]
 
       - id: "int_005"
         text: "仕事の進め方で共感するスタイルは？（複数選択可）"
         category_id: "interests"
         question_type: "multi_select"
         min_select: 1
-        max_select: 6
+        max_select: 10
         options:
           - id: "agile"
             label: "アジャイル・スクラム"
@@ -582,3 +705,276 @@ categories:
           - id: "mob_programming"
             label: "モブプログラミング"
             tags: ["mob-programming", "ensemble"]
+          - id: "lean_startup"
+            label: "リーンスタートアップ"
+            tags: ["lean-startup", "mvp", "validated-learning"]
+          - id: "ddd"
+            label: "ドメイン駆動設計"
+            tags: ["ddd", "domain-driven-design", "bounded-context"]
+          - id: "pair_programming"
+            label: "ペアプログラミング"
+            tags: ["pair-programming", "collaboration"]
+          - id: "code_review_first"
+            label: "コードレビュー重視"
+            tags: ["code-review", "pull-request", "quality"]
+          - id: "ci_cd_first"
+            label: "CI/CDファースト"
+            tags: ["ci-cd-first", "continuous-delivery"]
+          - id: "microservices"
+            label: "マイクロサービス"
+            tags: ["microservices", "distributed-systems"]
+          - id: "monolith_first"
+            label: "モノリス優先"
+            tags: ["monolith-first", "simplicity"]
+          - id: "event_driven"
+            label: "イベント駆動"
+            tags: ["event-driven", "event-sourcing", "cqrs"]
+          - id: "yagni"
+            label: "YAGNI重視"
+            tags: ["yagni", "simplicity", "minimal-viable"]
+          - id: "refactoring_first"
+            label: "リファクタリング優先"
+            tags: ["refactoring", "clean-code", "tech-debt"]
+          - id: "zero_trust"
+            label: "ゼロトラスト"
+            tags: ["zero-trust", "security-first"]
+          - id: "design_system"
+            label: "デザインシステム"
+            tags: ["design-system", "component-library", "consistency"]
+
+  - id: "persona"
+    name: "Persona"
+    order: 5
+    questions:
+      - id: "per_001"
+        text: "あなたの年代を教えてください"
+        category_id: "persona"
+        question_type: "single_choice"
+        choices:
+          - id: "a"
+            label: "20代"
+          - id: "b"
+            label: "30代"
+          - id: "c"
+            label: "40代"
+          - id: "d"
+            label: "50代以上"
+        source_reference: ""
+
+      - id: "per_002"
+        text: "あなたの主な職種を教えてください"
+        category_id: "persona"
+        question_type: "single_choice"
+        choices:
+          - id: "a"
+            label: "エンジニア/開発者"
+          - id: "b"
+            label: "マネージャー/リーダー"
+          - id: "c"
+            label: "デザイナー"
+          - id: "d"
+            label: "企画/ビジネス"
+        source_reference: ""
+
+      - id: "per_003"
+        text: "あなたの業界を教えてください"
+        category_id: "persona"
+        question_type: "single_choice"
+        choices:
+          - id: "a"
+            label: "IT/Web/SaaS"
+          - id: "b"
+            label: "製造/ハードウェア"
+          - id: "c"
+            label: "金融/コンサル"
+          - id: "d"
+            label: "教育/公共"
+        source_reference: ""
+
+      - id: "per_004"
+        text: "業界での経験年数は？"
+        category_id: "persona"
+        question_type: "single_choice"
+        choices:
+          - id: "a"
+            label: "1〜3年"
+          - id: "b"
+            label: "4〜7年"
+          - id: "c"
+            label: "8〜15年"
+          - id: "d"
+            label: "16年以上"
+        source_reference: ""
+
+      - id: "per_005"
+        text: "あなたのニックネームを教えてください"
+        category_id: "persona"
+        question_type: "single_choice"
+        choices:
+          - id: "a"
+            label: "ニックネームなし（匿名）"
+          - id: "b"
+            label: "名前の頭文字"
+          - id: "c"
+            label: "好きなキャラクター名"
+          - id: "d"
+            label: "自分で決める（Otherで入力）"
+        source_reference: ""
+
+  - id: "communication_tone"
+    name: "Communication Tone"
+    order: 6
+    questions:
+      - id: "ton_001"
+        text: "普段使う一人称は？"
+        category_id: "communication_tone"
+        question_type: "single_choice"
+        choices:
+          - id: "a"
+            label: "私"
+          - id: "b"
+            label: "僕"
+          - id: "c"
+            label: "俺"
+          - id: "d"
+            label: "自分"
+        source_reference: ""
+
+      - id: "ton_002"
+        text: "初対面の人とのテキストコミュニケーションのスタイルは？"
+        category_id: "communication_tone"
+        question_type: "single_choice"
+        choices:
+          - id: "a"
+            label: "常に丁寧語（です/ます）"
+          - id: "b"
+            label: "最初は敬語、慣れたらカジュアル"
+          - id: "c"
+            label: "基本カジュアル"
+          - id: "d"
+            label: "相手に完全に合わせる"
+        source_reference: ""
+
+      - id: "ton_003"
+        text: "メッセージの書き方の傾向は？"
+        category_id: "communication_tone"
+        question_type: "single_choice"
+        choices:
+          - id: "a"
+            label: "短文で要点のみ"
+          - id: "b"
+            label: "箇条書き・構造化"
+          - id: "c"
+            label: "丁寧に背景から説明"
+          - id: "d"
+            label: "絵文字/スタンプ多め"
+        source_reference: ""
+
+      - id: "ton_004"
+        text: "感情表現の傾向は？"
+        category_id: "communication_tone"
+        question_type: "single_choice"
+        choices:
+          - id: "a"
+            label: "抑制的（淡々と）"
+          - id: "b"
+            label: "ニュートラル"
+          - id: "c"
+            label: "素直に表現する"
+          - id: "d"
+            label: "豊か（感嘆符・絵文字活用）"
+        source_reference: ""
+
+      - id: "ton_005"
+        text: "ユーモアの傾向は？"
+        category_id: "communication_tone"
+        question_type: "single_choice"
+        choices:
+          - id: "a"
+            label: "真面目一辺倒"
+          - id: "b"
+            label: "たまに軽いジョーク"
+          - id: "c"
+            label: "ボケ/ツッコミ好き"
+          - id: "d"
+            label: "ブラックユーモア寄り"
+        source_reference: ""
+
+  - id: "values"
+    name: "Values & Beliefs"
+    order: 7
+    questions:
+      - id: "val_001"
+        text: "仕事で最も大切にしている信条は？"
+        category_id: "values"
+        question_type: "single_choice"
+        choices:
+          - id: "a"
+            label: "完璧より完了を重視する"
+          - id: "b"
+            label: "設計と計画に時間をかける"
+          - id: "c"
+            label: "チームの成長が最優先"
+          - id: "d"
+            label: "ユーザー価値の最大化"
+        source_reference: ""
+
+      - id: "val_002"
+        text: "チームとの関わり方のスタンスは？"
+        category_id: "values"
+        question_type: "single_choice"
+        choices:
+          - id: "a"
+            label: "信頼して委任し、困った時にサポート"
+          - id: "b"
+            label: "細かくフォローし、一緒に走る"
+          - id: "c"
+            label: "方向性だけ示し、やり方は任せる"
+          - id: "d"
+            label: "背中で見せる（率先垂範）"
+        source_reference: ""
+
+      - id: "val_003"
+        text: "意見が対立した時の基本姿勢は？"
+        category_id: "values"
+        question_type: "single_choice"
+        choices:
+          - id: "a"
+            label: "データと事実で冷静に議論"
+          - id: "b"
+            label: "相手の背景を理解してから判断"
+          - id: "c"
+            label: "第三者の意見を求める"
+          - id: "d"
+            label: "妥協点を素早く見つける"
+        source_reference: ""
+
+      - id: "val_004"
+        text: "失敗に対する考え方は？"
+        category_id: "values"
+        question_type: "single_choice"
+        choices:
+          - id: "a"
+            label: "素早く振り返り、次に活かす"
+          - id: "b"
+            label: "徹底分析して根本原因を潰す"
+          - id: "c"
+            label: "チームで共有し、全員の学びにする"
+          - id: "d"
+            label: "予防に全力を注ぎ、失敗を避ける"
+        source_reference: ""
+
+      - id: "val_005"
+        text: "変化やリスクへの態度は？"
+        category_id: "values"
+        question_type: "single_choice"
+        choices:
+          - id: "a"
+            label: "まず小さく試して判断する"
+          - id: "b"
+            label: "十分に情報を集めてから動く"
+          - id: "c"
+            label: "直感を信じて飛び込む"
+          - id: "d"
+            label: "段階的に移行計画を立てる"
+        source_reference: ""

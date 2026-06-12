@@ -21,6 +21,9 @@ ALL_QUESTION_IDS = [
   "lif_001", "lif_002", "lif_003", "lif_004",
   "lif_005", "lif_006", "lif_007", "lif_008", "lif_009",
   "int_001", "int_002", "int_003", "int_004", "int_005",
+  "per_001", "per_002", "per_003", "per_004", "per_005",
+  "ton_001", "ton_002", "ton_003", "ton_004", "ton_005",
+  "val_001", "val_002", "val_003", "val_004", "val_005",
 ]
 
 
@@ -124,7 +127,7 @@ class TestGetSessionStatus:
     assert data["session_id"] == session_id
     assert data["status"] == "active"
     assert data["answered"] == 1
-    assert data["total"] == 32
+    assert data["total"] == 47
     assert data["category"] is not None
 
 
@@ -138,7 +141,7 @@ class TestGetQuestions:
     assert "categories" in data
 
     categories = data["categories"]
-    assert len(categories) == 4
+    assert len(categories) == 7
 
     # カテゴリ順序確認
     assert categories[0]["id"] == "business_os"
@@ -377,8 +380,8 @@ class TestFullFlow:
     resp = await client.get(f"/api/sessions/{session_id}/status")
     assert resp.status_code == 200
     status_data = resp.json()
-    assert status_data["answered"] == 32
-    assert status_data["total"] == 32
+    assert status_data["answered"] == 47
+    assert status_data["total"] == 47
 
     # 4. スコア計算＋プロファイル生成
     resp = await client.post(f"/api/sessions/{session_id}/calculate")

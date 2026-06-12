@@ -617,15 +617,15 @@ def test_question_without_mapping_rejected(num_valid: int) -> None:
     question_loader = QuestionDataLoader(questions_file, mapping_loader)
     loaded = question_loader.load()
 
-  # マッピングなし質問は除外、有効質問のみロード
+  # 新ロジック: マッピングなし質問は直接マッピング質問として許可される
   total_questions = sum(len(c.questions) for c in loaded)
-  assert total_questions == num_valid
+  assert total_questions == num_valid + 1  # orphan も含めて全てロードされる
 
-  # orphan_q_id が含まれていないことを確認
+  # orphan_q_id も含まれている（マッピングなし=直接マッピング質問扱い）
   all_loaded_ids = [
     q.id for cat in loaded for q in cat.questions
   ]
-  assert orphan_q_id not in all_loaded_ids
+  assert orphan_q_id in all_loaded_ids
 
 
 @settings(max_examples=200)

@@ -31,6 +31,37 @@ class ContextLayers(BaseModel):
   semantic_contexts: int = 3
 
 
+class Persona(BaseModel):
+  """ユーザーの基本属性"""
+
+  nickname: str = ""
+  age_range: str = ""
+  role: str = ""
+  industry: str = ""
+  experience_years: str = ""
+
+
+class CommunicationTone(BaseModel):
+  """コミュニケーションスタイル・口調設定"""
+
+  pronoun: str = ""
+  formality: str = ""
+  text_style: str = ""
+  emotion_level: str = ""
+  humor: str = ""
+  response_length: str = ""
+
+
+class Values(BaseModel):
+  """価値観・信念"""
+
+  work_belief: str = ""
+  team_stance: str = ""
+  conflict_approach: str = ""
+  failure_attitude: str = ""
+  change_attitude: str = ""
+
+
 class ProfileOutput(BaseModel):
   """最終プロファイルJSON出力
 
@@ -38,7 +69,10 @@ class ProfileOutput(BaseModel):
   """
 
   profile_id: str = Field(..., pattern=r"^prof_\d{6}$")
+  persona: Persona = Field(default_factory=Persona)
+  communication_tone: CommunicationTone = Field(default_factory=CommunicationTone)
+  values: Values = Field(default_factory=Values)
   base_os: BaseOS
-  lexical_tags: list[str] = Field(..., min_length=5, max_length=50)
+  lexical_tags: list[str] = Field(..., min_length=5, max_length=500)
   semantic_contexts: dict[str, str]
   context_layers: ContextLayers = Field(default_factory=ContextLayers)
