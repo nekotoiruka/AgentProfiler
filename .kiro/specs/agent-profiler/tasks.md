@@ -342,6 +342,86 @@ Agent Profilerの実装計画です。バックエンド（FastAPI + Python 3.12
   - E2Eフロー動作確認
   - LLM連携のモック/実テスト
 
+---
+
+## Phase 3 追加タスク: プロファイル拡張 + AI自分対応
+
+- [ ] 18. JSON構造拡張とモデル追加
+  - [ ] 18.1 persona セクション追加
+    - Pydantic モデル: `Persona` (nickname, age_range, role, industry, experience_years)
+    - ProfileOutput に `persona` フィールド追加
+    - TypeScript 型定義に `Persona` 追加
+    - _新カテゴリ "persona" の質問5問（選択式 + Other）_
+
+  - [ ] 18.2 communication_tone セクション追加
+    - Pydantic モデル: `CommunicationTone` (pronoun, formality, text_style, emotion_level, humor, response_length)
+    - ProfileOutput に `communication_tone` フィールド追加
+    - TypeScript 型定義追加
+    - _新カテゴリ "communication_tone" の質問5問（選択式）_
+
+  - [ ] 18.3 values セクション追加
+    - Pydantic モデル: `Values` (work_belief, team_stance, conflict_approach, failure_attitude, change_attitude)
+    - ProfileOutput に `values` フィールド追加
+    - TypeScript 型定義追加
+    - _新カテゴリ "values" の質問5問（選択式）_
+
+  - [ ] 18.4 lexical_tags 上限引き上げ + 優先度制御
+    - 上限を 50 → 500 に変更
+    - タグ挿入優先度: チェックボックスタグ → キーワード抽出タグ → カテゴリ汎用タグ
+    - Pydantic モデルの max_length 制約更新
+    - _対象ファイル: backend/app/models/profile.py, backend/app/core/profile_generator.py_
+
+- [ ] 19. 新質問カテゴリ実装
+  - [ ] 19.1 Persona 質問5問作成（questions.yaml）
+    - 年代（10代〜60代+）、職種、業界、経験年数、ニックネーム
+    - 選択式（4択 + Other）、Other入力時はLLMスコアリング不要
+    - 回答結果を `persona` セクションに直接反映
+
+  - [ ] 19.2 Communication Tone 質問5問作成（questions.yaml）
+    - 一人称、敬語レベル、テキストスタイル、感情表現度、ユーモア傾向
+    - 選択式（4〜6択）
+    - 回答結果を `communication_tone` セクションに直接反映
+
+  - [ ] 19.3 Values & Beliefs 質問5問作成（questions.yaml）
+    - 仕事信条、チームスタンス、対立態度、失敗態度、変化態度
+    - 選択式（4〜6択）
+    - 回答結果を `values` セクションに直接反映
+
+  - [ ] 19.4 Interests チェックボックス選択肢を20件×5問に統一
+    - int_001 (技術分野): 12→20件
+    - int_002 (リフレッシュ): 10→20件
+    - int_003 (ツール): 10→20件
+    - int_004 (作業環境): 7→20件
+    - int_005 (進め方): 8→20件
+    - _対象ファイル: backend/data/questions.yaml_
+
+- [ ] 20. Profile Generator 拡張
+  - [ ] 20.1 persona/communication_tone/values の生成ロジック
+    - 回答結果を新セクションに直接マッピング
+    - 選択肢IDから対応する値を解決する辞書定義
+    - _対象ファイル: backend/app/core/profile_generator.py_
+
+  - [ ] 20.2 lexical_tags 優先度ロジック修正
+    - チェックボックスタグを最優先で追加
+    - その後にキーワード抽出 → カテゴリ汎用タグ
+    - 500件上限内で全チェックボックスタグが必ず含まれるよう保証
+    - _対象ファイル: backend/app/core/profile_generator.py_
+
+- [ ] 21. フロントエンド対応
+  - [ ] 21.1 新質問タイプ対応（選択式 direct_value 型）
+    - 質問の回答が直接JSONフィールドにマッピングされる新タイプ
+    - SurveyView で persona/tone/values 質問を適切に表示
+    - _対象ファイル: frontend/src/views/SurveyView.vue, frontend/src/types/_
+
+  - [ ] 21.2 ResultsDashboard に persona/tone/values 表示追加
+    - ペルソナ情報カード、口調設定、価値観の可視化
+    - _対象ファイル: frontend/src/views/ResultsDashboardView.vue_
+
+- [ ] 22. Phase 3 テスト + 最終検証
+  - 全テスト実行
+  - E2Eフロー（全カテゴリ回答→JSON生成→全フィールド存在確認）
+  - README更新
+
 ## Task Dependency Graph
 
 ```json
