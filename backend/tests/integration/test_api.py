@@ -23,7 +23,6 @@ ALL_QUESTION_IDS = [
   "int_001", "int_002", "int_003", "int_004", "int_005",
   "per_001", "per_002", "per_003", "per_004", "per_005",
   "ton_001", "ton_002", "ton_003", "ton_004", "ton_005",
-  "val_001", "val_002", "val_003", "val_004", "val_005",
 ]
 
 
@@ -127,7 +126,7 @@ class TestGetSessionStatus:
     assert data["session_id"] == session_id
     assert data["status"] == "active"
     assert data["answered"] == 1
-    assert data["total"] == 47
+    assert data["total"] == 42
     assert data["category"] is not None
 
 
@@ -141,12 +140,12 @@ class TestGetQuestions:
     assert "categories" in data
 
     categories = data["categories"]
-    assert len(categories) == 7
+    assert len(categories) == 6
 
     # カテゴリ順序確認
-    assert categories[0]["id"] == "business_os"
-    assert categories[1]["id"] == "communication"
-    assert categories[2]["id"] == "lifestyle"
+    assert categories[0]["id"] == "persona"
+    assert categories[1]["id"] == "communication_tone"
+    assert categories[2]["id"] == "interests"
 
     # 各カテゴリに質問が含まれている
     for cat in categories:
@@ -380,8 +379,8 @@ class TestFullFlow:
     resp = await client.get(f"/api/sessions/{session_id}/status")
     assert resp.status_code == 200
     status_data = resp.json()
-    assert status_data["answered"] == 47
-    assert status_data["total"] == 47
+    assert status_data["answered"] == 42
+    assert status_data["total"] == 42
 
     # 4. スコア計算＋プロファイル生成
     resp = await client.post(f"/api/sessions/{session_id}/calculate")

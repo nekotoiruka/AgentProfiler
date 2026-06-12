@@ -26,7 +26,6 @@ ALL_QUESTION_IDS = [
   "int_001", "int_002", "int_003", "int_004", "int_005",
   "per_001", "per_002", "per_003", "per_004", "per_005",
   "ton_001", "ton_002", "ton_003", "ton_004", "ton_005",
-  "val_001", "val_002", "val_003", "val_004", "val_005",
 ]
 
 # single_choice のみのID（スコアリング対象）
@@ -146,8 +145,8 @@ class TestCompleteFlowVariedAnswers:
     resp = await client.get(f"/api/sessions/{session_id}/status")
     assert resp.status_code == 200
     status = resp.json()
-    assert status["answered"] == 47
-    assert status["total"] == 47
+    assert status["answered"] == 42
+    assert status["total"] == 42
 
     # プロファイル計算
     profile_id = await calculate_profile(client, session_id)
@@ -233,7 +232,7 @@ class TestCompleteFlowWithOtherAnswers:
 
     # ステータス確認: 全問回答済み
     resp = await client.get(f"/api/sessions/{session_id}/status")
-    assert resp.json()["answered"] == 47
+    assert resp.json()["answered"] == 42
 
     # 計算＋プロファイル取得
     profile_id = await calculate_profile(client, session_id)
@@ -279,7 +278,7 @@ class TestSessionResumeFlow:
     assert resp.status_code == 200
     status = resp.json()
     assert status["answered"] == 5
-    assert status["total"] == 47
+    assert status["total"] == 42
     assert status["status"] == "active"
 
     # 残り8問に回答（セッション復帰）
@@ -292,7 +291,7 @@ class TestSessionResumeFlow:
 
     # ステータス確認: 13/13
     resp = await client.get(f"/api/sessions/{session_id}/status")
-    assert resp.json()["answered"] == 47
+    assert resp.json()["answered"] == 42
 
     # 計算＋プロファイル取得
     profile_id = await calculate_profile(client, session_id)

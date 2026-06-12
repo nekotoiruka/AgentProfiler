@@ -145,7 +145,7 @@ class ProfileGenerator:
     questions: list[Question],
   ) -> ProfileOutput:
     """正規化スコアと回答データから完全なプロファイルを生成する"""
-    from app.models.profile import Persona, CommunicationTone, Values
+    from app.models.profile import Persona, CommunicationTone
 
     profile_id = self._next_profile_id()
     base_os = self._build_base_os(normalized_scores)
@@ -155,13 +155,11 @@ class ProfileGenerator:
     )
     persona = self._build_persona(answers, questions)
     tone = self._build_communication_tone(answers, questions)
-    values = self._build_values(answers, questions)
 
     return ProfileOutput(
       profile_id=profile_id,
       persona=persona,
       communication_tone=tone,
-      values=values,
       base_os=base_os,
       lexical_tags=lexical_tags,
       semantic_contexts=semantic_contexts,
@@ -293,6 +291,12 @@ class ProfileGenerator:
           if option:
             for tag in option.tags:
               self._add_tag(tag, tags, seen)
+        # free_texts もタグとして追加
+        if answer.free_texts:
+          for ft in answer.free_texts:
+            normalized = ft.lower().strip()
+            if normalized:
+              self._add_tag(normalized, tags, seen)
 
     # 優先度2: single_choice回答からキーワード抽出
     for answer in answers:

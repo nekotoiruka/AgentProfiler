@@ -39,12 +39,6 @@
     "humor": "light_joke",
     "response_length": "medium"
   },
-  "values": {
-    "work_belief": "...",
-    "team_stance": "...",
-    "conflict_approach": "...",
-    "failure_attitude": "..."
-  },
   "base_os": {
     "axes": { ... },
     "decision_style": "覇道の戦略家",
@@ -95,15 +89,14 @@ npm run dev
 
 ## 質問カテゴリ
 
-| カテゴリ | 質問タイプ | 問数 | 目的 |
-|---------|-----------|------|------|
-| Business OS | 4択 + Other | 9問 | 思考特性スコアリング |
-| Communication | 4択 + Other | 9問 | 思考特性スコアリング |
-| Lifestyle/Hobbies | 4択 + Other | 9問 | 思考特性スコアリング |
-| Persona | 選択式 | 5問 | 基本属性（年代、職種等） |
-| Communication Tone | 選択式 | 5問 | 口調・表現スタイル |
-| Values & Beliefs | 選択式 | 5問 | 価値観・信念 |
-| Interests & Preferences | チェックボックス（20択×5問） | 5問 | 興味・スキル・好み |
+| 順序 | カテゴリ | 質問タイプ | 問数 | 目的 |
+|------|---------|-----------|------|------|
+| 1 | Persona | 選択式 + Other | 5問 | 基本属性（年代、職種等） |
+| 2 | Communication Tone | 選択式 | 5問 | 口調・表現スタイル |
+| 3 | Interests & Preferences | チェックボックス（20択 + 自由入力4欄）×5問 | 5問 | 興味・スキル・好み |
+| 4 | Business OS | 4択 + Other | 9問 | 思考特性スコアリング |
+| 5 | Communication | 4択 + Other | 9問 | 思考特性スコアリング |
+| 6 | Lifestyle/Hobbies | 4択 + Other | 9問 | 思考特性スコアリング |
 
 ---
 

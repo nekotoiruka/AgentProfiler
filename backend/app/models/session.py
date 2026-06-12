@@ -20,6 +20,8 @@ class Answer(BaseModel):
   text: str | None = None
   selected_options: list[str] | None = None
   """multi_select型の回答: 選択されたoption_idのリスト"""
+  free_texts: list[str] | None = None
+  """multi_select型の自由入力テキスト"""
   submitted_at: datetime = Field(default_factory=datetime.now)
 
 

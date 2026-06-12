@@ -102,6 +102,7 @@ async def submit_answer(
       choice_id=body.choice_id,
       text=body.text,
       selected_options=body.selected_options,
+      free_texts=body.free_texts,
     )
   except SessionNotFoundError:
     raise HTTPException(

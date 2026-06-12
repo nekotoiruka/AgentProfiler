@@ -24,6 +24,8 @@ class AnswerSubmission(BaseModel):
   text: str | None = Field(None, max_length=500)
   selected_options: list[str] | None = None
   """multi_select型の回答: 選択されたoption_idのリスト"""
+  free_texts: list[str] | None = None
+  """multi_select型の自由入力テキスト（各最大100文字）"""
 
 
 # --- Response Models ---

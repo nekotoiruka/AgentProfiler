@@ -39,7 +39,9 @@ class Question(BaseModel):
   choices: list[Choice] = Field(default_factory=list)
   """single_choice型の選択肢（4つ固定）"""
   options: list[MultiSelectOption] = Field(default_factory=list)
-  """multi_select型の選択肢（5〜15個、複数選択可）"""
+  """multi_select型の選択肢（5〜20個、複数選択可）"""
+  free_text_slots: int = 0
+  """multi_select型: 追加の自由テキスト入力欄数（0〜4）"""
   min_select: int = 0
   """multi_select型: 最低選択数（0=制限なし）"""
   max_select: int = 0

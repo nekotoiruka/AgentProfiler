@@ -71,7 +71,6 @@ class ProfileOutput(BaseModel):
   profile_id: str = Field(..., pattern=r"^prof_\d{6}$")
   persona: Persona = Field(default_factory=Persona)
   communication_tone: CommunicationTone = Field(default_factory=CommunicationTone)
-  values: Values = Field(default_factory=Values)
   base_os: BaseOS
   lexical_tags: list[str] = Field(..., min_length=5, max_length=500)
   semantic_contexts: dict[str, str]
