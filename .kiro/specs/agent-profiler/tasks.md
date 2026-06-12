@@ -284,48 +284,48 @@ Agent Profilerの実装計画です。バックエンド（FastAPI + Python 3.12
 
 ## Phase 2 追加タスク: UX改善 + LLM連携
 
-- [ ] 14. UI/UXの改善
-  - [ ] 14.1 双極スライダーUI実装
+- [x] 14. UI/UXの改善
+  - [x] 14.1 双極スライダーUI実装
     - レーダーチャートを廃止し、各軸を「E ←──●──→ I」のような双極バー表示に変更
     - 0.5を中心として左右に伸びるバー（左=第1極、右=第2極）
     - 各軸の両端に日本語ラベル（外向的 ←→ 内向的、感覚的 ←→ 直観的、論理的 ←→ 感情的、計画的 ←→ 柔軟的）
     - 「大きい=良い」の誤解を防ぐ見せ方
     - _対象ファイル: frontend/src/views/ResultsDashboardView.vue_
 
-  - [ ] 14.2 Decision Style 16タイプ日本語名
+  - [x] 14.2 Decision Style 16タイプ日本語名
     - 4軸×2極 = 16パターンそれぞれに厨二病風の日本語名を付与
     - 例: ENTJ → 「覇道の戦略家」、INFP → 「静寂の夢想家」
     - バックエンド: profile_generator.py に16タイプ名マッピング辞書を追加
     - フロントエンド: decision_style の表示を日本語タイプ名 + 英語コードの併記に変更
     - _対象ファイル: backend/app/core/profile_generator.py, frontend/src/views/ResultsDashboardView.vue_
 
-  - [ ] 14.3 チェックボックス回答のプロファイル反映修正
+  - [x] 14.3 チェックボックス回答のプロファイル反映修正
     - multi_select回答（selected_options）のタグを lexical_tags に直接反映
     - multi_select回答の内容を semantic_contexts の各ドメインに文脈として反映
     - Profile Generator の _build_lexical_tags を multi_select 回答対応に修正
     - _対象ファイル: backend/app/core/profile_generator.py_
 
-- [ ] 15. Semantic Contexts テンプレート精緻化
-  - [ ] 15.1 0.25単位テンプレート分岐
+- [x] 15. Semantic Contexts テンプレート精緻化
+  - [x] 15.1 0.25単位テンプレート分岐
     - 現在の >0.50 / <0.50 の2分割を、0.00-0.25 / 0.25-0.50 / 0.50-0.75 / 0.75-1.00 の4段階に精緻化
     - 各ドメイン × 4軸 × 4段階 のテンプレート文を作成
     - テンプレート選択ロジックの改修
     - _対象ファイル: backend/app/core/profile_generator.py_
 
-  - [ ] 15.2 チェックボックス回答の Semantic Contexts 反映
+  - [x] 15.2 チェックボックス回答の Semantic Contexts 反映
     - 選択されたオプションのカテゴリに応じて semantic_contexts の内容を補強
     - 例: 「アジャイル・スクラム」選択 → work_rhythm に該当する文脈を追加
     - _対象ファイル: backend/app/core/profile_generator.py_
 
-- [ ] 16. LLM連携（OpenAI / Azure AOAI）
-  - [ ] 16.1 LLMクライアント基盤実装
+- [x] 16. LLM連携（OpenAI / Azure AOAI）
+  - [x] 16.1 LLMクライアント基盤実装
     - `backend/app/services/llm_client.py` を作成
     - OpenAI API / Azure AOAI の両方に対応するクライアントクラス
     - 環境変数でAPIキー・エンドポイントを設定（.env ファイル、gitignore済み）
     - リトライ、レート制限対応、タイムアウト設定
     - _対象ファイル: backend/app/services/llm_client.py, backend/.env.example_
 
-  - [ ] 16.2 Other自由記述のLLMスコアリング
+  - [x] 16.2 Other自由記述のLLMスコアリング
     - Other回答時にLLMを呼び出し、回答テキストから4軸スコアを推定
     - プロンプト設計: 質問文 + 自由記述テキスト → 4軸スコア(-10〜+10)のJSON出力
     - フォールバック: LLM呼び出し失敗時は従来通りニュートラル[0,0,0,0]
