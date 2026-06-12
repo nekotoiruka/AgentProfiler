@@ -17,6 +17,30 @@ _AXIS_POLES: dict[str, tuple[str, str]] = {
   "judging_perceiving": ("judging", "perceiving"),
 }
 
+# 16タイプ日本語名マッピング（厨二病風）
+# キー: (E/I極, S/N極, T/F極, J/P極) の組み合わせ
+_TYPE_NAMES: dict[str, tuple[str, str]] = {
+  "extroverted_sensing_thinking_judging": ("統率の鉄壁", "ESTJ"),
+  "extroverted_sensing_thinking_perceiving": ("刹那の切り拓き", "ESTP"),
+  "extroverted_sensing_feeling_judging": ("絆の守護者", "ESFJ"),
+  "extroverted_sensing_feeling_perceiving": ("煌めきの演者", "ESFP"),
+  "extroverted_intuitive_thinking_judging": ("覇道の戦略家", "ENTJ"),
+  "extroverted_intuitive_thinking_perceiving": ("混沌の発明家", "ENTP"),
+  "extroverted_intuitive_feeling_judging": ("導きの旗手", "ENFJ"),
+  "extroverted_intuitive_feeling_perceiving": ("閃光の触媒", "ENFP"),
+  "introverted_sensing_thinking_judging": ("鋼鉄の番人", "ISTJ"),
+  "introverted_sensing_thinking_perceiving": ("孤高の職人", "ISTP"),
+  "introverted_sensing_feeling_judging": ("静謐の献身者", "ISFJ"),
+  "introverted_sensing_feeling_perceiving": ("幽玄の芸術家", "ISFP"),
+  "introverted_intuitive_thinking_judging": ("深淵の設計者", "INTJ"),
+  "introverted_intuitive_thinking_perceiving": ("無限の解析者", "INTP"),
+  "introverted_intuitive_feeling_judging": ("慈愛の導師", "INFJ"),
+  "introverted_intuitive_feeling_perceiving": ("静寂の夢想家", "INFP"),
+}
+
+# balanced を含むパターンのフォールバック名
+_BALANCED_TYPE_NAME = ("均衡の探求者", "XXXX")
+
 # do_not_listテンプレート: 各軸の強い偏りに対応するメッセージ
 # キー: (軸名, "high" or "low")
 _DO_NOT_TEMPLATES: dict[tuple[str, str], str] = {
@@ -166,9 +190,10 @@ class ProfileGenerator:
     各軸について:
     - >0.50 → 第1極（例: extroverted）
     - <0.50 → 第2極（例: introverted）
-    - ==0.50 → _balanced
+    - ==0.50 → balanced
 
-    結果をアンダースコアで結合する。
+    結果から16タイプ日本語名を付与して返す。
+    フォーマット: "日本語名（コード）"
     """
     parts: list[str] = []
     axis_values = {
@@ -185,10 +210,15 @@ class ProfileGenerator:
       elif value < 0.50:
         parts.append(pole2)
       else:
-        # exactly 0.50 → balanced
         parts.append("balanced")
 
-    return "_".join(parts)
+    style_key = "_".join(parts)
+
+    # 16タイプ名の解決
+    type_info = _TYPE_NAMES.get(style_key, _BALANCED_TYPE_NAME)
+    jp_name, code = type_info
+
+    return f"{jp_name}（{code}）"
 
   def _derive_do_not_list(self, scores: NormalizedScores) -> list[str]:
     """強い偏り（<0.30 or >0.70）のある軸からdo_not_list項目を生成する
@@ -227,7 +257,8 @@ class ProfileGenerator:
   ) -> list[str]:
     """回答と質問データからlexical_tagsを抽出する
 
-    - 選択されたchoice labelからキーワードを抽出
+    - single_choice: 選択されたchoice labelからキーワードを抽出
+    - multi_select: selected_options に対応するタグを直接追加
     - カテゴリ由来のタグを追加
     - 小文字化、[a-z0-9\\-./]+パターンに合致するもののみ
     - 最小5件、最大50件、重複なし
@@ -238,13 +269,23 @@ class ProfileGenerator:
     # 質問IDベースのルックアップを構築
     question_map: dict[str, Question] = {q.id: q for q in questions}
 
-    # 回答に対応するchoice labelからキーワード抽出
+    # 回答を処理
     for answer in answers:
       question = question_map.get(answer.question_id)
       if not question:
         continue
 
-      # choice_idがある場合、そのlabelからキーワード抽出
+      # multi_select型: selected_optionsのタグを直接追加
+      if question.question_type == "multi_select" and answer.selected_options:
+        option_map = {opt.id: opt for opt in question.options}
+        for opt_id in answer.selected_options:
+          option = option_map.get(opt_id)
+          if option:
+            for tag in option.tags:
+              self._add_tag(tag, tags, seen)
+        continue
+
+      # single_choice型: choice_idがある場合、そのlabelからキーワード抽出
       if answer.choice_id:
         for choice in question.choices:
           if choice.id == answer.choice_id:
@@ -321,10 +362,12 @@ class ProfileGenerator:
   ) -> str:
     """ドメインキーとスコアに基づいて段落テキストを生成する
 
-    50〜500語（日本語の場合は文字数ベースではなく単語数ベース）の
-    自然言語段落を生成する。excluded_tokensに含まれるトークンは使用しない。
+    0.25単位の4段階テンプレートで細かく分岐:
+    - 0.00〜0.25: 第2極が非常に強い
+    - 0.25〜0.50: 第2極がやや強い
+    - 0.50〜0.75: 第1極がやや強い
+    - 0.75〜1.00: 第1極が非常に強い
     """
-    # 各ドメインに対応する段落生成テンプレートを使用
     generators = {
       "problem_solving": self._gen_problem_solving,
       "communication_style": self._gen_communication_style,
@@ -341,285 +384,194 @@ class ProfileGenerator:
 
     return paragraph
 
+  @staticmethod
+  def _score_level(value: float) -> int:
+    """スコアを4段階レベルに変換する
+
+    0: 0.00〜0.25（第2極 非常に強い）
+    1: 0.25〜0.50（第2極 やや強い）
+    2: 0.50〜0.75（第1極 やや強い）
+    3: 0.75〜1.00（第1極 非常に強い）
+    """
+    if value < 0.25:
+      return 0
+    elif value < 0.50:
+      return 1
+    elif value < 0.75:
+      return 2
+    else:
+      return 3
+
   def _gen_problem_solving(self, scores: NormalizedScores) -> str:
-    """問題解決スタイルの段落を生成"""
-    ei = scores.extroverted_introverted
-    sn = scores.sensing_intuition
-    tf = scores.thinking_feeling
+    """問題解決スタイルの段落を生成（4段階分岐）"""
+    ei = self._score_level(scores.extroverted_introverted)
+    sn = self._score_level(scores.sensing_intuition)
+    tf = self._score_level(scores.thinking_feeling)
 
-    parts: list[str] = []
-    parts.append("問題に直面した際、")
+    parts: list[str] = ["問題に直面した際、"]
 
-    if ei > 0.50:
-      parts.append(
-        "まず周囲の人々と対話を通じて状況を把握し、"
-        "多様な視点を集めることで解決の糸口を見つけようとします。"
-      )
-    else:
-      parts.append(
-        "まず一人で深く考え、問題の本質を見極めてから"
-        "解決策を練り上げていく傾向があります。"
-      )
+    # E/I 軸（問題解決のアプローチ）
+    ei_templates = [
+      "完全に一人の環境で深い内省と分析を通じて本質を追究し、十分に練り上げた解決策のみを提示します。",
+      "まず一人で考えを整理してから、必要に応じて少人数に相談するスタイルです。",
+      "チームとの対話を通じて多角的な視点を集めつつ、自分の考えも積極的に共有します。",
+      "即座に関係者全員を巻き込み、ブレインストーミングやディスカッションを通じて集合知で突破口を見つけます。",
+    ]
+    parts.append(ei_templates[ei])
 
-    if sn > 0.50:
-      parts.append(
-        "具体的な事実やデータに基づいて現状を正確に把握し、"
-        "実証された方法論を適用して段階的に問題を解消していきます。"
-        "観察可能な現象から論理的に推論を積み重ね、"
-        "確実性の高いアプローチを選択する傾向が強いです。"
-      )
-    else:
-      parts.append(
-        "全体像やパターンを直感的に捉え、"
-        "従来の枠組みにとらわれない創造的なアプローチで解決を図ります。"
-        "可能性の探索を重視し、斬新な角度からの発想を活かして"
-        "根本的な解決策を模索する傾向があります。"
-      )
+    # S/N 軸（情報処理スタイル）
+    sn_templates = [
+      "既存の枠組みに囚われず、まだ誰も試していない革新的な発想でパラダイムシフトを起こすことを好みます。未来の可能性に強く引かれ、直感を最大の武器として活用します。",
+      "全体像やパターンを捉えることを重視し、創造的なアプローチで従来と異なる角度から解決策を探ります。",
+      "具体的なデータと事実に基づいて現状を把握し、実績のある手法を段階的に適用していきます。",
+      "徹底的にデータを収集・分析し、あらゆる具体的事実を積み上げて確実性の高い解決策を導き出します。過去の実績と定量的エビデンスを最も信頼します。",
+    ]
+    parts.append(sn_templates[sn])
 
-    if tf > 0.50:
-      parts.append(
-        "判断においては客観的な基準と論理的整合性を最重要視し、"
-        "感情に左右されない合理的な結論を導き出します。"
-        "効率性と正確性を重視した意思決定プロセスを好み、"
-        "根拠に基づいた説明を大切にします。"
-      )
-    else:
-      parts.append(
-        "判断においては関係者への影響や人間関係の調和を考慮し、"
-        "全員が納得できる解決策を見つけることを重視します。"
-        "共感的な理解に基づいた意思決定を好み、"
-        "チーム全体の士気と信頼関係を大切にします。"
-      )
+    # T/F 軸（判断基準）
+    tf_templates = [
+      "人間関係の調和とチーム全体の感情的な安全性を最優先し、全員が心から納得できる道を粘り強く探ります。",
+      "判断時に関係者への影響を考慮し、共感的な理解に基づいた意思決定を心がけます。",
+      "客観的な基準と論理的整合性を重視し、根拠に基づいた合理的な結論を導き出します。",
+      "徹底的に論理と数値で最適解を追求し、感情に左右されない鋭い分析力で判断を下します。効率と正確性が絶対的な判断軸です。",
+    ]
+    parts.append(tf_templates[tf])
 
     return "".join(parts)
 
   def _gen_communication_style(self, scores: NormalizedScores) -> str:
-    """コミュニケーションスタイルの段落を生成"""
-    ei = scores.extroverted_introverted
-    tf = scores.thinking_feeling
-    jp = scores.judging_perceiving
+    """コミュニケーションスタイルの段落を生成（4段階分岐）"""
+    ei = self._score_level(scores.extroverted_introverted)
+    tf = self._score_level(scores.thinking_feeling)
+    jp = self._score_level(scores.judging_perceiving)
 
-    parts: list[str] = []
-    parts.append("コミュニケーションにおいては、")
+    parts: list[str] = ["コミュニケーションにおいては、"]
 
-    if ei > 0.50:
-      parts.append(
-        "積極的に会話を主導し、オープンな議論を通じて"
-        "アイデアを発展させることを好みます。"
-        "グループでの対話からエネルギーを得て、"
-        "活発な意見交換の場を自然に作り出します。"
-      )
-    else:
-      parts.append(
-        "深く考えてから発言する傾向があり、"
-        "一対一やの少人数での質の高い対話を好みます。"
-        "書面でのコミュニケーションに強みを発揮し、"
-        "整理された形での情報共有を重視します。"
-      )
+    ei_templates = [
+      "書面やドキュメントでの精緻な表現を最も得意とし、必要最小限の対面対話で深い意思疎通を実現します。",
+      "少人数での落ち着いた対話を好み、よく考えてから発言する傾向があります。",
+      "オープンな議論を好み、チームとの活発な意見交換の場を自然に作り出します。",
+      "あらゆる場で会話の中心となり、大人数のディスカッションをエネルギッシュにリードします。即興的なやり取りから最高のアイデアが生まれると信じています。",
+    ]
+    parts.append(ei_templates[ei])
 
-    if tf > 0.50:
-      parts.append(
-        "明確で論理的な表現を好み、"
-        "要点を簡潔に伝えることを心がけます。"
-        "事実に基づいた建設的なフィードバックを重視し、"
-        "曖昧な表現を避ける傾向があります。"
-      )
-    else:
-      parts.append(
-        "相手の感情や状況に配慮した表現を選び、"
-        "温かみのあるコミュニケーションを心がけます。"
-        "相手の立場に立った言葉遣いを重視し、"
-        "励ましや肯定的なフィードバックを大切にします。"
-      )
+    tf_templates = [
+      "相手の感情を最優先に配慮し、温かみと共感に満ちた言葉選びを大切にします。ポジティブなフィードバックで相手の力を引き出します。",
+      "相手の状況に寄り添った柔らかい表現を心がけ、関係性の維持を重視します。",
+      "明確で論理的な表現を好み、事実に基づいた簡潔なコミュニケーションを志向します。",
+      "徹底的に無駄を省いた論理的表現で、事実と結論のみを端的に伝えます。曖昧さを排除し、正確性を最重要視します。",
+    ]
+    parts.append(tf_templates[tf])
 
-    if jp > 0.50:
-      parts.append(
-        "事前に議題を整理し、構造化された会話の進行を好みます。"
-        "結論を明確にし、次のアクションを具体的に決めることで"
-        "生産的な対話を実現します。"
-      )
-    else:
-      parts.append(
-        "柔軟な対話の流れを好み、"
-        "予定外のトピックにも臨機応変に対応します。"
-        "多様な視点を取り入れることを重視し、"
-        "議論の展開に応じて方向性を調整していきます。"
-      )
+    jp_templates = [
+      "対話の流れに身を委ね、即興的に話題を展開させることで予想外の発見を楽しみます。",
+      "柔軟に話題を広げつつ、必要に応じて方向性を調整していきます。",
+      "事前にアジェンダを整理し、構造的な進行で生産的な結論を導きます。",
+      "分単位で計画された進行表に沿い、全ての論点を期限内に明確な結論へ導きます。脱線を許さず、アクションアイテムを確実に定めます。",
+    ]
+    parts.append(jp_templates[jp])
 
     return "".join(parts)
 
   def _gen_work_rhythm(self, scores: NormalizedScores) -> str:
-    """業務リズムの段落を生成"""
-    sn = scores.sensing_intuition
-    jp = scores.judging_perceiving
-    ei = scores.extroverted_introverted
+    """業務リズムの段落を生成（4段階分岐）"""
+    sn = self._score_level(scores.sensing_intuition)
+    jp = self._score_level(scores.judging_perceiving)
+    ei = self._score_level(scores.extroverted_introverted)
 
-    parts: list[str] = []
-    parts.append("業務のリズムとしては、")
+    parts: list[str] = ["業務のリズムとしては、"]
 
-    if jp > 0.50:
-      parts.append(
-        "計画的に物事を進めることを好み、"
-        "明確なスケジュールとマイルストーンに沿って"
-        "着実に成果を積み上げていくスタイルです。"
-        "期限を守ることへの強い責任感を持ち、"
-        "事前準備を十分に行ってから実行に移ります。"
-      )
-    else:
-      parts.append(
-        "状況に応じて柔軟にスケジュールを調整し、"
-        "変化する優先度に対応しながら進めるスタイルです。"
-        "新しい情報や状況変化に素早く適応し、"
-        "最適なタイミングで判断を下すことを重視します。"
-      )
+    jp_templates = [
+      "固定スケジュールを持たず、インスピレーションが湧いた瞬間に全力で集中するスタイルです。締め切りは創造性の敵だと感じます。",
+      "大枠の方向性だけ決めて柔軟に進め、状況変化に素早く適応しながら最適なタイミングで判断します。",
+      "計画的に進行し、マイルストーンに沿って着実に成果を積み上げていきます。",
+      "分単位の詳細スケジュールを組み、全てを事前に計画してから実行に移ります。予定外の事態は許容しない徹底した管理スタイルです。",
+    ]
+    parts.append(jp_templates[jp])
 
-    if sn > 0.50:
-      parts.append(
-        "目の前のタスクに集中し、一つずつ確実に完了させてから"
-        "次に進む堅実なアプローチを取ります。"
-        "具体的で測定可能な目標を設定し、"
-        "進捗を可視化しながら進めることを好みます。"
-      )
-    else:
-      parts.append(
-        "複数のタスクを並行して進めることが得意で、"
-        "全体の関連性を見ながら優先度を判断します。"
-        "長期的なビジョンに基づいて日々の作業を位置づけ、"
-        "創造的な閃きを活かせる余白を確保します。"
-      )
+    sn_templates = [
+      "複数の可能性を並行して探索し、全体像の中でタスクの意味を位置づけることで創造的な余白を確保します。",
+      "全体の関連性を見ながら優先度を判断し、長期ビジョンに基づいて日々の作業を位置づけます。",
+      "目の前のタスクに集中し、具体的で測定可能な目標を設定して確実に完了させていきます。",
+      "一つのタスクを完璧に仕上げてから次へ進む超堅実派です。全ての作業を定量的に追跡・管理します。",
+    ]
+    parts.append(sn_templates[sn])
 
-    if ei > 0.50:
-      parts.append(
-        "チームメンバーとの頻繁なやり取りの中で"
-        "モチベーションを維持し、協働作業を通じて"
-        "生産性を高めることを好みます。"
-      )
-    else:
-      parts.append(
-        "集中できる静かな環境での作業を好み、"
-        "深い思考が必要なタスクに長時間没頭することで"
-        "最高の成果を生み出します。"
-      )
+    ei_templates = [
+      "完全な静寂の中で深い集中状態に入り、単独作業で最高の成果を出します。",
+      "集中時間を確保しつつ、必要な時だけ短時間で的確にコミュニケーションを取ります。",
+      "チームとの定期的なやり取りの中でモチベーションを維持し、協働で生産性を高めます。",
+      "常にチームメンバーとつながり、ペアワークやモブ形式で互いに刺激し合いながら進めます。",
+    ]
+    parts.append(ei_templates[ei])
 
     return "".join(parts)
 
   def _gen_analog_habits(self, scores: NormalizedScores) -> str:
-    """アナログ習慣の段落を生成"""
-    sn = scores.sensing_intuition
-    tf = scores.thinking_feeling
-    jp = scores.judging_perceiving
+    """アナログ習慣の段落を生成（4段階分岐）"""
+    sn = self._score_level(scores.sensing_intuition)
+    tf = self._score_level(scores.thinking_feeling)
+    jp = self._score_level(scores.judging_perceiving)
 
-    parts: list[str] = []
-    parts.append("デジタル以外の習慣として、")
+    parts: list[str] = ["デジタル以外の習慣として、"]
 
-    if sn > 0.50:
-      parts.append(
-        "手書きのノートやメモを活用し、"
-        "物理的な記録を通じて思考を整理する習慣があります。"
-        "実際に手を動かすことで記憶の定着を図り、"
-        "紙の質感や書く行為そのものから集中力を得ています。"
-      )
-    else:
-      parts.append(
-        "マインドマップや自由連想的なスケッチを通じて"
-        "アイデアを視覚化する習慣があります。"
-        "制約のない発想の場として紙やホワイトボードを活用し、"
-        "デジタルでは得られない思考の広がりを大切にしています。"
-      )
+    sn_templates = [
+      "制約のないマインドマップや自由連想スケッチで思考を視覚化し、まだ存在しないコンセプトに形を与えることを楽しみます。",
+      "抽象的なアイデアを紙に書き出し、視覚化することで思考の広がりを大切にしています。",
+      "手書きノートで具体的な事実やデータを整理し、実際に手を動かすことで記憶の定着を図ります。",
+      "精密なバレットジャーナルや詳細な手書きログで、あらゆる事実を正確に記録・追跡します。",
+    ]
+    parts.append(sn_templates[sn])
 
-    if tf > 0.50:
-      parts.append(
-        "読書においては専門書や技術書を好み、"
-        "知識の体系的な蓄積を重視します。"
-        "論理的な議論や分析的な内容に惹かれ、"
-        "実務に直結する情報を効率的に吸収することを目指しています。"
-      )
-    else:
-      parts.append(
-        "小説やエッセイなど人間の内面を描いた作品を好み、"
-        "多様な視点や感情の機微に触れることを大切にしています。"
-        "芸術作品や音楽からインスピレーションを得て、"
-        "感性を磨くことが日常の一部となっています。"
-      )
+    tf_templates = [
+      "小説やエッセイなど人間の内面を描いた作品に没頭し、多様な感情の機微に触れることで感性を磨いています。",
+      "人間関係や共感力に関する本を好み、芸術作品からインスピレーションを得ています。",
+      "専門書や技術書で知識を体系的に蓄積し、実務に直結する情報を効率的に吸収します。",
+      "論文や学術書を読み込み、徹底的にロジカルな知識体系の構築に時間を費やします。",
+    ]
+    parts.append(tf_templates[tf])
 
-    if jp > 0.50:
-      parts.append(
-        "日課としてのルーティンを大切にし、"
-        "朝の散歩やストレッチなど決まった時間に行う活動で"
-        "心身のコンディションを整えています。"
-        "規則正しい生活リズムが高い生産性の基盤となっています。"
-      )
-    else:
-      parts.append(
-        "その日の気分や天候に合わせて過ごし方を変え、"
-        "固定されたルーティンよりも自発的な行動を好みます。"
-        "予期せぬ発見や出会いを楽しむ姿勢で、"
-        "日々の生活に新鮮さを取り入れることを重視しています。"
-      )
+    jp_templates = [
+      "その日の気分で過ごし方を変え、予期せぬ発見や出会いを日々楽しんでいます。",
+      "固定ルーティンよりも自発的な行動を好み、日常に新鮮さを取り入れています。",
+      "朝の散歩やストレッチなど決まった日課で心身のコンディションを整えています。",
+      "分刻みのルーティンを厳守し、規則正しい生活リズムが高いパフォーマンスの基盤です。",
+    ]
+    parts.append(jp_templates[jp])
 
     return "".join(parts)
 
   def _gen_lifestyle_preferences(self, scores: NormalizedScores) -> str:
-    """ライフスタイル嗜好の段落を生成"""
-    ei = scores.extroverted_introverted
-    sn = scores.sensing_intuition
-    tf = scores.thinking_feeling
-    jp = scores.judging_perceiving
+    """ライフスタイル嗜好の段落を生成（4段階分岐）"""
+    ei = self._score_level(scores.extroverted_introverted)
+    sn = self._score_level(scores.sensing_intuition)
+    tf = self._score_level(scores.thinking_feeling)
 
-    parts: list[str] = []
-    parts.append("ライフスタイルにおいては、")
+    parts: list[str] = ["ライフスタイルにおいては、"]
 
-    if ei > 0.50:
-      parts.append(
-        "社交的な活動や人との交流を通じてエネルギーを充電し、"
-        "コミュニティへの参加や集まりへの出席を楽しみます。"
-        "多くの人とつながりを持つことで視野を広げ、"
-        "新しい機会やアイデアに触れることを求めています。"
-      )
-    else:
-      parts.append(
-        "静かで落ち着いた環境での個人的な時間を大切にし、"
-        "内省や自分自身との対話を通じてエネルギーを回復します。"
-        "少数の深い人間関係を重視し、"
-        "質の高い一対一のつながりに価値を見出しています。"
-      )
+    ei_templates = [
+      "一人の時間を何より大切にし、内省と創作の静かな空間で自分自身と向き合うことでエネルギーを回復します。",
+      "少数の深い人間関係を重視し、質の高い一対一のつながりに価値を見出しています。",
+      "人との交流を通じて視野を広げ、コミュニティや集まりへの参加を楽しみます。",
+      "あらゆる社交の場に顔を出し、膨大な人脈ネットワークの中心で常に新しい刺激を求めています。",
+    ]
+    parts.append(ei_templates[ei])
 
-    if sn > 0.50:
-      parts.append(
-        "現実的で実用的な趣味を好み、"
-        "手を動かして形あるものを作り出すことに喜びを感じます。"
-        "五感で楽しめる体験を大切にし、"
-        "自然の中での活動や料理などの身体性のある趣味を持つ傾向があります。"
-      )
-    elif sn < 0.50:
-      parts.append(
-        "想像力を刺激する活動や抽象的な概念の探求を好み、"
-        "未知の領域への知的好奇心が旺盛です。"
-        "芸術、哲学、科学など多岐にわたる分野に関心を持ち、"
-        "異なる分野を横断する発想を楽しみます。"
-      )
+    sn_templates = [
+      "未知の領域への知的好奇心が旺盛で、哲学・芸術・科学を横断する抽象的な探求を楽しみます。",
+      "想像力を刺激する活動を好み、新しいアイデアや概念との出会いを大切にしています。",
+      "五感で楽しめる具体的な体験を大切にし、手を動かしてものを作ることに喜びを感じます。",
+      "徹底的に現実世界での実践と体験を重視し、目に見える成果を着実に積み上げることに充実感を覚えます。",
+    ]
+    parts.append(sn_templates[sn])
 
-    if tf > 0.50 and jp > 0.50:
-      parts.append(
-        "効率的な時間の使い方を追求し、"
-        "目標達成に向けた計画的な自己投資を重視します。"
-        "休息も含めたスケジュールを意識的に設計し、"
-        "持続可能な成長を目指す姿勢で日々を過ごしています。"
-      )
-    elif tf < 0.50 and jp < 0.50:
-      parts.append(
-        "心の赴くままに過ごす自由な時間を大切にし、"
-        "予定に縛られない余白のある生活を好みます。"
-        "人との温かいつながりの中で幸福感を見出し、"
-        "日常の小さな喜びを味わうことを大切にしています。"
-      )
-    else:
-      parts.append(
-        "仕事とプライベートのメリハリを重視し、"
-        "オンとオフの切り替えを意識的に行っています。"
-        "自分のペースを大切にしながらも新しい挑戦を受け入れ、"
-        "バランスの取れた充実した日々を送ることを目指しています。"
-      )
+    tf_templates = [
+      "人との温かいつながりの中で幸福を感じ、心の赴くままに自由に過ごす時間を大切にしています。",
+      "バランスの取れた生活の中で自分のペースを大切にし、新しい挑戦も受け入れます。",
+      "効率的な時間活用を意識し、目標達成に向けた計画的な自己投資を重視します。",
+      "全ての活動を最適化し、成果測定可能な自己研鑽に時間を集中投下します。無駄な時間は一秒も許容しません。",
+    ]
+    parts.append(tf_templates[tf])
 
     return "".join(parts)
 

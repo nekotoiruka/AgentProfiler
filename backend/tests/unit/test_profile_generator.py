@@ -152,7 +152,7 @@ class TestDecisionStyle:
       judging_perceiving=0.90,
     )
     result = generator.generate(scores, sample_answers, sample_questions)
-    assert result.base_os.decision_style == "extroverted_sensing_thinking_judging"
+    assert result.base_os.decision_style == "統率の鉄壁（ESTJ）"
 
   def test_all_low(self, generator: ProfileGenerator, sample_questions: list[Question], sample_answers: list[Answer]) -> None:
     """全軸 < 0.50 → 全て第2極"""
@@ -163,7 +163,7 @@ class TestDecisionStyle:
       judging_perceiving=0.40,
     )
     result = generator.generate(scores, sample_answers, sample_questions)
-    assert result.base_os.decision_style == "introverted_intuitive_feeling_perceiving"
+    assert result.base_os.decision_style == "静寂の夢想家（INFP）"
 
   def test_mixed_poles(self, generator: ProfileGenerator, sample_questions: list[Question], sample_answers: list[Answer]) -> None:
     """混合パターン"""
@@ -174,7 +174,7 @@ class TestDecisionStyle:
       judging_perceiving=0.51,
     )
     result = generator.generate(scores, sample_answers, sample_questions)
-    assert result.base_os.decision_style == "extroverted_intuitive_thinking_judging"
+    assert result.base_os.decision_style == "覇道の戦略家（ENTJ）"
 
   def test_balanced_axis(self, generator: ProfileGenerator, sample_questions: list[Question], sample_answers: list[Answer]) -> None:
     """0.50の軸は balanced"""
@@ -185,7 +185,7 @@ class TestDecisionStyle:
       judging_perceiving=0.50,
     )
     result = generator.generate(scores, sample_answers, sample_questions)
-    assert result.base_os.decision_style == "balanced_balanced_balanced_balanced"
+    assert result.base_os.decision_style == "均衡の探求者（XXXX）"
 
   def test_partial_balanced(self, generator: ProfileGenerator, sample_questions: list[Question], sample_answers: list[Answer]) -> None:
     """一部だけ balanced"""
@@ -196,7 +196,7 @@ class TestDecisionStyle:
       judging_perceiving=0.50,
     )
     result = generator.generate(scores, sample_answers, sample_questions)
-    assert result.base_os.decision_style == "extroverted_balanced_feeling_balanced"
+    assert result.base_os.decision_style == "均衡の探求者（XXXX）"
 
 
 class TestDoNotList:

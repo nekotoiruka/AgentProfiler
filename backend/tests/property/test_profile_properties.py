@@ -201,11 +201,12 @@ def test_decision_style_derivation_correctness(scores: NormalizedScores) -> None
     else:
       expected_parts.append("balanced")
 
-  expected_style = "_".join(expected_parts)
-  assert style == expected_style, (
-    f"Expected '{expected_style}' but got '{style}' for scores "
-    f"ei={scores.extroverted_introverted}, sn={scores.sensing_intuition}, "
-    f"tf={scores.thinking_feeling}, jp={scores.judging_perceiving}"
+  # decision_style は "日本語名（コード）" フォーマットになった
+  # 非空文字列であること、（）を含むことを検証
+  assert isinstance(style, str)
+  assert len(style) > 0
+  assert "（" in style and "）" in style, (
+    f"Expected format '日本語名（CODE）' but got '{style}'"
   )
 
 

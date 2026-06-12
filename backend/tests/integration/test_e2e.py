@@ -454,16 +454,11 @@ class TestProfileDataCorrectness:
     assert 0.35 <= axes["thinking_feeling"] <= 0.45
     assert 0.31 <= axes["judging_perceiving"] <= 0.41
 
-    # decision_style が正しく derivation されている
-    # EI > 0.50 → "extroverted"
-    # SN < 0.50 → "intuitive" (第2極)
-    # TF < 0.50 → "feeling" (第2極)
-    # JP < 0.50 → "perceiving" (第2極)
+    # decision_style は日本語名（コード）フォーマット
+    # EI > 0.50, SN < 0.50, TF < 0.50, JP < 0.50 → ENFP → 閃光の触媒
     decision_style = profile["base_os"]["decision_style"]
-    assert "extroverted" in decision_style
-    assert "intuitive" in decision_style
-    assert "feeling" in decision_style
-    assert "perceiving" in decision_style
+    assert "閃光の触媒" in decision_style
+    assert "ENFP" in decision_style
 
     # do_not_list が存在する（EI > 0.70 なので少なくとも1項目）
     assert len(profile["base_os"]["do_not_list"]) >= 1
