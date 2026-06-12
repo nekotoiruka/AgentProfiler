@@ -20,6 +20,7 @@ from app.api.dependencies import (
   get_question_loader,
   get_scoring_engine,
   get_session_manager,
+  get_llm_client,
 )
 from app.core.normalizer import Normalizer
 from app.core.profile_generator import ProfileGenerator
@@ -203,11 +204,13 @@ async def calculate_profile(
 
   手順:
   1. セッション取得（完了チェック）
-  2. 全回答に対してスコアを累積
+  2. 全回答に対してスコアを累積（Other回答はLLMスコアリング）
   3. 正規化
   4. プロファイル生成
   5. セッションにスコアとprofile_idを保存
   """
+  from app.services.llm_client import LLMClient
+
   # セッション取得
   try:
     session = await sm.get_session(session_id)
@@ -235,6 +238,13 @@ async def calculate_profile(
   if session.status == "active":
     await sm.mark_complete(session_id)
 
+  # 質問マップを構築（LLMスコアリングで質問テキストが必要）
+  categories = ql.get()
+  question_map = {q.id: q for cat in categories for q in cat.questions}
+
+  # LLMクライアント取得
+  llm = get_llm_client()
+
   # スコア累積計算
   accumulated = AxisScores()
   for answer in session.answers.values():
@@ -246,10 +256,30 @@ async def calculate_profile(
         )
       except MappingNotFoundError as e:
         logger.warning("Mapping not found during calculation: %s", e)
-        # Other扱い（ニュートラル）にフォールバック
+        accumulated = se.apply_neutral(accumulated)
+    elif answer.text:
+      # Other（自由記述） → LLMスコアリング
+      question = question_map.get(answer.question_id)
+      q_text = question.text if question else ""
+
+      if llm and llm.enabled:
+        result = llm.score_free_text(q_text, answer.text)
+        if result:
+          accumulated = se.apply_llm_scores(
+            accumulated,
+            result.extroverted_introverted,
+            result.sensing_intuition,
+            result.thinking_feeling,
+            result.judging_perceiving,
+          )
+        else:
+          # LLM失敗 → ニュートラルフォールバック
+          accumulated = se.apply_neutral(accumulated)
+      else:
+        # LLM無効 → ニュートラルフォールバック
         accumulated = se.apply_neutral(accumulated)
     else:
-      # Other（自由記述） → ニュートラルスコア
+      # multi_select回答等 → スコアリング対象外
       accumulated = se.apply_neutral(accumulated)
 
   # 正規化

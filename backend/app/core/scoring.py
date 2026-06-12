@@ -77,3 +77,27 @@ class ScoringEngine:
       同一の AxisScores（スコア不変）
     """
     return session_scores
+
+  def apply_llm_scores(
+    self,
+    session_scores: AxisScores,
+    ei: int,
+    sn: int,
+    tf: int,
+    jp: int,
+  ) -> AxisScores:
+    """LLMが推定した4軸スコアを累積加算する。
+
+    Args:
+      session_scores: 現在のセッション累積スコア
+      ei, sn, tf, jp: LLMが推定した各軸のスコア（-10〜+10）
+
+    Returns:
+      加算後の新しい AxisScores
+    """
+    return AxisScores(
+      extroverted_introverted=session_scores.extroverted_introverted + ei,
+      sensing_intuition=session_scores.sensing_intuition + sn,
+      thinking_feeling=session_scores.thinking_feeling + tf,
+      judging_perceiving=session_scores.judging_perceiving + jp,
+    )

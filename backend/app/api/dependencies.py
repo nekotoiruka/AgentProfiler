@@ -11,6 +11,7 @@ from app.core.normalizer import Normalizer
 from app.core.profile_generator import ProfileGenerator
 from app.core.scoring import ScoringEngine
 from app.services.data_loader import MappingDictionaryLoader, QuestionDataLoader
+from app.services.llm_client import LLMClient
 from app.services.session_manager import SessionManager
 
 logger = logging.getLogger(__name__)
@@ -29,12 +30,13 @@ _session_manager: SessionManager | None = None
 _scoring_engine: ScoringEngine | None = None
 _normalizer: Normalizer | None = None
 _profile_generator: ProfileGenerator | None = None
+_llm_client: LLMClient | None = None
 
 
 async def init_services() -> None:
   """全サービスを初期化する（アプリ起動時に呼び出す）"""
   global _mapping_loader, _question_loader, _session_manager
-  global _scoring_engine, _normalizer, _profile_generator
+  global _scoring_engine, _normalizer, _profile_generator, _llm_client
 
   # Mapping Dictionary のロード
   _mapping_loader = MappingDictionaryLoader(_MAPPING_PATH)
@@ -60,10 +62,14 @@ async def init_services() -> None:
   # Profile Generator の初期化
   _profile_generator = ProfileGenerator()
 
+  # LLM Client の初期化（API Key が未設定でも起動可能）
+  _llm_client = LLMClient()
+
   logger.info(
-    "Services initialized: %d categories, %d questions",
+    "Services initialized: %d categories, %d questions, LLM=%s",
     len(categories),
     total_questions,
+    "enabled" if _llm_client.enabled else "disabled",
   )
 
 
@@ -101,3 +107,8 @@ def get_profile_generator() -> ProfileGenerator:
   """ProfileGeneratorインスタンスを返す"""
   assert _profile_generator is not None, "Services not initialized"
   return _profile_generator
+
+
+def get_llm_client() -> LLMClient | None:
+  """LLMClientインスタンスを返す（未設定時はNone）"""
+  return _llm_client
