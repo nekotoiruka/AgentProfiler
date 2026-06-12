@@ -16,12 +16,12 @@ const isLoading = ref(true);
 const fetchError = ref<string | null>(null);
 const copyStatus = ref<'idle' | 'success' | 'error'>('idle');
 
-// --- 軸表示情報 ---
+// --- 軸表示情報（独自用語: MBTI関連コード不使用） ---
 const axisLabels = [
-  { key: 'extroverted_introverted', leftLabel: '内向的', rightLabel: '外向的', leftCode: 'I', rightCode: 'E' },
-  { key: 'sensing_intuition', leftLabel: '直観的', rightLabel: '感覚的', leftCode: 'N', rightCode: 'S' },
-  { key: 'thinking_feeling', leftLabel: '感情的', rightLabel: '論理的', leftCode: 'F', rightCode: 'T' },
-  { key: 'judging_perceiving', leftLabel: '柔軟的', rightLabel: '計画的', leftCode: 'P', rightCode: 'J' },
+  { key: 'extroverted_introverted', leftLabel: '深掘型', rightLabel: '拡散型' },
+  { key: 'sensing_intuition', leftLabel: '構想型', rightLabel: '実証型' },
+  { key: 'thinking_feeling', leftLabel: '共感型', rightLabel: '分析型' },
+  { key: 'judging_perceiving', leftLabel: '探索型', rightLabel: '設計型' },
 ] as const;
 
 // --- Computed ---
@@ -115,10 +115,8 @@ async function copyToClipboard(): Promise<void> {
           <div class="bipolar-slider__labels">
             <span class="bipolar-slider__label bipolar-slider__label--left">
               {{ axis.leftLabel }}
-              <span class="bipolar-slider__code">{{ axis.leftCode }}</span>
             </span>
             <span class="bipolar-slider__label bipolar-slider__label--right">
-              <span class="bipolar-slider__code">{{ axis.rightCode }}</span>
               {{ axis.rightLabel }}
             </span>
           </div>
@@ -257,12 +255,6 @@ async function copyToClipboard(): Promise<void> {
   font-size: 0.85rem;
   font-weight: 500;
   color: #374151;
-}
-
-.bipolar-slider__code {
-  font-weight: 700;
-  color: #6c63ff;
-  margin: 0 0.25rem;
 }
 
 .bipolar-slider__track {

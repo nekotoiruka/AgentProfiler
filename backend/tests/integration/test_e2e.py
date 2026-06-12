@@ -457,8 +457,7 @@ class TestProfileDataCorrectness:
     # decision_style は日本語名（コード）フォーマット
     # EI > 0.50, SN < 0.50, TF < 0.50, JP < 0.50 → ENFP → 閃光の触媒
     decision_style = profile["base_os"]["decision_style"]
-    assert "閃光の触媒" in decision_style
-    assert "ENFP" in decision_style
+    assert "閃光の触媒" == decision_style
 
     # do_not_list が存在する（EI > 0.70 なので少なくとも1項目）
     assert len(profile["base_os"]["do_not_list"]) >= 1

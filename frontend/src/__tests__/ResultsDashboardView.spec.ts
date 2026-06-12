@@ -18,7 +18,7 @@ const mockProfile: ProfileOutput = {
       thinking_feeling: 0.68,
       judging_perceiving: 0.51,
     },
-    decision_style: '覇道の戦略家（ENTJ）',
+    decision_style: '覇道の戦略家',
     do_not_list: [
       '一人で長時間考える時間を強制しないでください（外向優位）',
       '過度に詳細な手順指示を与えないでください（直観優位）',
@@ -80,7 +80,7 @@ describe('ResultsDashboardView', () => {
     mockFetchProfile.mockResolvedValue(mockProfile);
     const wrapper = createWrapper();
     await flushPromises();
-    expect(wrapper.find('.results-dashboard__type-name').text()).toBe('覇道の戦略家（ENTJ）');
+    expect(wrapper.find('.results-dashboard__type-name').text()).toBe('覇道の戦略家');
   });
 
   it('renders 4 bipolar sliders', async () => {

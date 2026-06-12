@@ -152,7 +152,7 @@ class TestDecisionStyle:
       judging_perceiving=0.90,
     )
     result = generator.generate(scores, sample_answers, sample_questions)
-    assert result.base_os.decision_style == "統率の鉄壁（ESTJ）"
+    assert result.base_os.decision_style == "統率の鉄壁"
 
   def test_all_low(self, generator: ProfileGenerator, sample_questions: list[Question], sample_answers: list[Answer]) -> None:
     """全軸 < 0.50 → 全て第2極"""
@@ -163,7 +163,7 @@ class TestDecisionStyle:
       judging_perceiving=0.40,
     )
     result = generator.generate(scores, sample_answers, sample_questions)
-    assert result.base_os.decision_style == "静寂の夢想家（INFP）"
+    assert result.base_os.decision_style == "静寂の夢想家"
 
   def test_mixed_poles(self, generator: ProfileGenerator, sample_questions: list[Question], sample_answers: list[Answer]) -> None:
     """混合パターン"""
@@ -174,7 +174,7 @@ class TestDecisionStyle:
       judging_perceiving=0.51,
     )
     result = generator.generate(scores, sample_answers, sample_questions)
-    assert result.base_os.decision_style == "覇道の戦略家（ENTJ）"
+    assert result.base_os.decision_style == "覇道の戦略家"
 
   def test_balanced_axis(self, generator: ProfileGenerator, sample_questions: list[Question], sample_answers: list[Answer]) -> None:
     """0.50の軸は balanced"""
@@ -185,7 +185,7 @@ class TestDecisionStyle:
       judging_perceiving=0.50,
     )
     result = generator.generate(scores, sample_answers, sample_questions)
-    assert result.base_os.decision_style == "均衡の探求者（XXXX）"
+    assert result.base_os.decision_style == "均衡の探求者"
 
   def test_partial_balanced(self, generator: ProfileGenerator, sample_questions: list[Question], sample_answers: list[Answer]) -> None:
     """一部だけ balanced"""
@@ -196,7 +196,7 @@ class TestDecisionStyle:
       judging_perceiving=0.50,
     )
     result = generator.generate(scores, sample_answers, sample_questions)
-    assert result.base_os.decision_style == "均衡の探求者（XXXX）"
+    assert result.base_os.decision_style == "均衡の探求者"
 
 
 class TestDoNotList:
@@ -212,7 +212,7 @@ class TestDoNotList:
     )
     result = generator.generate(scores, sample_answers, sample_questions)
     assert len(result.base_os.do_not_list) >= 1
-    assert any("外向" in item for item in result.base_os.do_not_list)
+    assert any("対話や協働" in item for item in result.base_os.do_not_list)
 
   def test_strong_low_polarity(self, generator: ProfileGenerator, sample_questions: list[Question], sample_answers: list[Answer]) -> None:
     """スコア < 0.30 で項目生成"""
@@ -224,7 +224,7 @@ class TestDoNotList:
     )
     result = generator.generate(scores, sample_answers, sample_questions)
     assert len(result.base_os.do_not_list) >= 1
-    assert any("内向" in item for item in result.base_os.do_not_list)
+    assert any("即興ディスカッション" in item for item in result.base_os.do_not_list)
 
   def test_no_strong_polarity_generic(self, generator: ProfileGenerator, sample_questions: list[Question], sample_answers: list[Answer]) -> None:
     """強い偏りなし → 汎用メッセージ1件"""

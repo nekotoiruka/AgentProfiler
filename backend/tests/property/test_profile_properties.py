@@ -201,13 +201,10 @@ def test_decision_style_derivation_correctness(scores: NormalizedScores) -> None
     else:
       expected_parts.append("balanced")
 
-  # decision_style は "日本語名（コード）" フォーマットになった
-  # 非空文字列であること、（）を含むことを検証
+  # decision_style は "日本語名" フォーマットになった
+  # 非空文字列であることを検証
   assert isinstance(style, str)
   assert len(style) > 0
-  assert "（" in style and "）" in style, (
-    f"Expected format '日本語名（CODE）' but got '{style}'"
-  )
 
 
 # --- Property 8: Do-not-list generation from polarity ---
@@ -245,16 +242,17 @@ def test_do_not_list_generation_from_polarity(scores: NormalizedScores) -> None:
     scores.judging_perceiving,
   ]
   strong_polarity_count = sum(
-    1 for v in axis_values if v < 0.30 or v > 0.70
+    1 for v in axis_values if v < 0.35 or v > 0.65
   )
 
   if strong_polarity_count == 0:
     # 偏りがない場合は汎用フォールバック（1件）
     assert len(do_not_list) == 1
   else:
-    # 強い偏りがある軸と同じ数の項目
-    assert len(do_not_list) == strong_polarity_count, (
-      f"Expected {strong_polarity_count} items for strong polarities, "
+    # 偏りがある軸と同じ数の項目（最大4）
+    expected = min(strong_polarity_count, 4)
+    assert len(do_not_list) == expected, (
+      f"Expected {expected} items for polarities, "
       f"got {len(do_not_list)}"
     )
 

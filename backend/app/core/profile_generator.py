@@ -9,7 +9,7 @@ from app.models.scores import NormalizedScores
 from app.models.session import Answer
 
 
-# 軸名と両極のマッピング
+# 軸名と両極のマッピング（独自用語: MBTIコードは使用しない）
 _AXIS_POLES: dict[str, tuple[str, str]] = {
   "extroverted_introverted": ("extroverted", "introverted"),
   "sensing_intuition": ("sensing", "intuitive"),
@@ -17,61 +17,65 @@ _AXIS_POLES: dict[str, tuple[str, str]] = {
   "judging_perceiving": ("judging", "perceiving"),
 }
 
-# 16タイプ日本語名マッピング（厨二病風）
-# キー: (E/I極, S/N極, T/F極, J/P極) の組み合わせ
-_TYPE_NAMES: dict[str, tuple[str, str]] = {
-  "extroverted_sensing_thinking_judging": ("統率の鉄壁", "ESTJ"),
-  "extroverted_sensing_thinking_perceiving": ("刹那の切り拓き", "ESTP"),
-  "extroverted_sensing_feeling_judging": ("絆の守護者", "ESFJ"),
-  "extroverted_sensing_feeling_perceiving": ("煌めきの演者", "ESFP"),
-  "extroverted_intuitive_thinking_judging": ("覇道の戦略家", "ENTJ"),
-  "extroverted_intuitive_thinking_perceiving": ("混沌の発明家", "ENTP"),
-  "extroverted_intuitive_feeling_judging": ("導きの旗手", "ENFJ"),
-  "extroverted_intuitive_feeling_perceiving": ("閃光の触媒", "ENFP"),
-  "introverted_sensing_thinking_judging": ("鋼鉄の番人", "ISTJ"),
-  "introverted_sensing_thinking_perceiving": ("孤高の職人", "ISTP"),
-  "introverted_sensing_feeling_judging": ("静謐の献身者", "ISFJ"),
-  "introverted_sensing_feeling_perceiving": ("幽玄の芸術家", "ISFP"),
-  "introverted_intuitive_thinking_judging": ("深淵の設計者", "INTJ"),
-  "introverted_intuitive_thinking_perceiving": ("無限の解析者", "INTP"),
-  "introverted_intuitive_feeling_judging": ("慈愛の導師", "INFJ"),
-  "introverted_intuitive_feeling_perceiving": ("静寂の夢想家", "INFP"),
+# 16タイプ日本語名マッピング（独自ネーミング、MBTIコード不使用）
+_TYPE_NAMES: dict[str, str] = {
+  "extroverted_sensing_thinking_judging": "統率の鉄壁",
+  "extroverted_sensing_thinking_perceiving": "刹那の切り拓き",
+  "extroverted_sensing_feeling_judging": "絆の守護者",
+  "extroverted_sensing_feeling_perceiving": "煌めきの演者",
+  "extroverted_intuitive_thinking_judging": "覇道の戦略家",
+  "extroverted_intuitive_thinking_perceiving": "混沌の発明家",
+  "extroverted_intuitive_feeling_judging": "導きの旗手",
+  "extroverted_intuitive_feeling_perceiving": "閃光の触媒",
+  "introverted_sensing_thinking_judging": "鋼鉄の番人",
+  "introverted_sensing_thinking_perceiving": "孤高の職人",
+  "introverted_sensing_feeling_judging": "静謐の献身者",
+  "introverted_sensing_feeling_perceiving": "幽玄の芸術家",
+  "introverted_intuitive_thinking_judging": "深淵の設計者",
+  "introverted_intuitive_thinking_perceiving": "無限の解析者",
+  "introverted_intuitive_feeling_judging": "慈愛の導師",
+  "introverted_intuitive_feeling_perceiving": "静寂の夢想家",
 }
 
 # balanced を含むパターンのフォールバック名
-_BALANCED_TYPE_NAME = ("均衡の探求者", "XXXX")
+_BALANCED_TYPE_NAME = "均衡の探求者"
 
-# do_not_listテンプレート: 各軸の強い偏りに対応するメッセージ
+# do_not_listテンプレート: 各軸の偏りに対応するメッセージ
+# 閾値: <0.35 (低) / >0.65 (高) で発火（中程度の偏りも拾う）
 # キー: (軸名, "high" or "low")
 _DO_NOT_TEMPLATES: dict[tuple[str, str], str] = {
   ("extroverted_introverted", "high"): (
-    "一人で長時間考える時間を強制しないでください（外向優位）"
+    "一人で長時間の内省を強制せず、対話や協働の機会を確保してください"
   ),
   ("extroverted_introverted", "low"): (
-    "大人数での即興ディスカッションを強要しないでください（内向優位）"
+    "大人数での即興ディスカッションや頻繁な会議を最小限にしてください"
   ),
   ("sensing_intuition", "high"): (
-    "抽象的な概念だけで説明せず、具体例を交えてください（感覚優位）"
+    "抽象的な概念だけでなく、具体例やデータを交えて説明してください"
   ),
   ("sensing_intuition", "low"): (
-    "過度に詳細な手順指示を与えないでください（直観優位）"
+    "過度に詳細な手順書や細かい制約で縛らず、全体像を共有してください"
   ),
   ("thinking_feeling", "high"): (
-    "感情的な説得や共感アピールを主軸にしないでください（論理優位）"
+    "感情論や曖昧な共感だけで説得せず、論理的根拠を明示してください"
   ),
   ("thinking_feeling", "low"): (
-    "冷徹な数値だけで判断を迫らないでください（感情優位）"
+    "数値と効率だけで判断を迫らず、チームの感情や関係性にも配慮してください"
   ),
   ("judging_perceiving", "high"): (
-    "直前の計画変更や曖昧な指示を出さないでください（計画優位）"
+    "直前の計画変更や曖昧な指示を避け、事前に明確な方針を共有してください"
   ),
   ("judging_perceiving", "low"): (
-    "厳密すぎるスケジュールで縛らないでください（柔軟優位）"
+    "厳密すぎるスケジュールで縛らず、柔軟に対応できる余白を残してください"
   ),
 }
 
-# do_not_listの汎用テンプレート（強い偏りがない場合のフォールバック）
+# do_not_listの汎用テンプレート（偏りが全くない場合のフォールバック）
 _GENERIC_DO_NOT = "極端な一方向への強制を避け、バランスの取れた対応をしてください"
+
+# do_not_list の発火閾値（<0.35 or >0.65 で発火）
+_DO_NOT_THRESHOLD_LOW = 0.35
+_DO_NOT_THRESHOLD_HIGH = 0.65
 
 # semantic_contextsの固定ドメインキー
 _SEMANTIC_DOMAIN_KEYS = [
@@ -214,15 +218,15 @@ class ProfileGenerator:
 
     style_key = "_".join(parts)
 
-    # 16タイプ名の解決
-    type_info = _TYPE_NAMES.get(style_key, _BALANCED_TYPE_NAME)
-    jp_name, code = type_info
+    # 16タイプ名の解決（日本語名のみ、MBTIコード不使用）
+    jp_name = _TYPE_NAMES.get(style_key, _BALANCED_TYPE_NAME)
 
-    return f"{jp_name}（{code}）"
+    return jp_name
 
   def _derive_do_not_list(self, scores: NormalizedScores) -> list[str]:
-    """強い偏り（<0.30 or >0.70）のある軸からdo_not_list項目を生成する
+    """偏り（<0.35 or >0.65）のある軸からdo_not_list項目を生成する
 
+    閾値を緩めに設定し、中程度の偏りでもアドバイスを生成する。
     偏りがない場合は汎用メッセージ1件を返す。
     最大4項目。
     """
@@ -237,16 +241,16 @@ class ProfileGenerator:
     for axis_name, value in axis_values.items():
       if len(items) >= 4:
         break
-      if value > 0.70:
+      if value > _DO_NOT_THRESHOLD_HIGH:
         template = _DO_NOT_TEMPLATES.get((axis_name, "high"))
         if template:
           items.append(template)
-      elif value < 0.30:
+      elif value < _DO_NOT_THRESHOLD_LOW:
         template = _DO_NOT_TEMPLATES.get((axis_name, "low"))
         if template:
           items.append(template)
 
-    # 強い偏りがない場合は汎用メッセージ
+    # 偏りがない場合は汎用メッセージ
     if not items:
       items.append(_GENERIC_DO_NOT)
 
