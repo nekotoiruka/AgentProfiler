@@ -23,3 +23,7 @@ dist/
 
 # OS
 .DS_Store
+
+# Environment (API keys)
+.env
+!.env.example
