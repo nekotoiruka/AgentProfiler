@@ -1,0 +1,584 @@
+# 質問データファイル
+# カテゴリ順序: Business OS → Communication → Lifestyle/Hobbies
+# 各質問は最低2軸を活性化するよう設計
+# 軸極性定義:
+#   extroverted_introverted: 正=E(外向), 負=I(内向)
+#   sensing_intuition: 正=S(感覚), 負=N(直観)
+#   thinking_feeling: 正=T(論理), 負=F(感情)
+#   judging_perceiving: 正=J(計画), 負=P(柔軟)
+
+categories:
+  - id: "business_os"
+    name: "Business OS"
+    order: 1
+    questions:
+      - id: "bos_001"
+        text: "プロジェクトが危機的状況に陥った時、最初に取る行動は？"
+        category_id: "business_os"
+        choices:
+          - id: "a"
+            label: "チーム全員を集めて即座にブレインストーミングを開始する"
+          - id: "b"
+            label: "一人で状況を整理し、解決策を練ってから共有する"
+          - id: "c"
+            label: "データを集めて根本原因を特定してから対策を立てる"
+          - id: "d"
+            label: "過去の類似事例を参照し、実績ある手法を適用する"
+        source_reference: "OEJTS_E/I_adapted"
+
+      - id: "bos_002"
+        text: "新しいプロジェクトのアサインについて、あなたの好みに最も近いものは？"
+        category_id: "business_os"
+        choices:
+          - id: "a"
+            label: "未経験の技術領域に挑戦する案件を選ぶ"
+          - id: "b"
+            label: "これまでの専門性を深掘りできる案件を選ぶ"
+          - id: "c"
+            label: "チームメンバーとの相性を重視して選ぶ"
+          - id: "d"
+            label: "成果が明確に測定できる案件を選ぶ"
+        source_reference: "IPIP-NEO_Openness_adapted"
+
+      - id: "bos_003"
+        text: "1ヶ月後の大型リリースに向けたスケジュール管理で、あなたのスタイルは？"
+        category_id: "business_os"
+        choices:
+          - id: "a"
+            label: "詳細なガントチャートを作り、毎日進捗を追跡する"
+          - id: "b"
+            label: "マイルストーンだけ設定し、日々の進め方は柔軟に変える"
+          - id: "c"
+            label: "チームの状況を見ながら都度優先度を調整する"
+          - id: "d"
+            label: "技術的リスクを洗い出し、クリティカルパスを重点管理する"
+        source_reference: "IPIP_Conscientiousness_adapted"
+
+      - id: "bos_004"
+        text: "重要な意思決定を求められた時、あなたが最も重視する判断基準は？"
+        category_id: "business_os"
+        choices:
+          - id: "a"
+            label: "データと論理的根拠に基づいて最適解を導き出す"
+          - id: "b"
+            label: "関係者全員の納得感とチームの士気を優先する"
+          - id: "c"
+            label: "直感とこれまでの経験則を信頼して素早く決める"
+          - id: "d"
+            label: "前例や業界標準を調べ、リスクの低い選択肢を取る"
+        source_reference: "OEJTS_T/F_adapted"
+
+      - id: "bos_005"
+        text: "新しいツールや技術の導入を検討する時、あなたのアプローチは？"
+        category_id: "business_os"
+        choices:
+          - id: "a"
+            label: "すぐにプロトタイプを作り、動かしながら評価する"
+          - id: "b"
+            label: "ドキュメントと仕様を熟読し、十分理解してから着手する"
+          - id: "c"
+            label: "既に使っているチームの意見を聞き、実績を確認する"
+          - id: "d"
+            label: "既存ワークフローとの互換性と移行コストを分析する"
+        source_reference: "IPIP-NEO_Openness_adapted"
+
+      - id: "bos_006"
+        text: "チームの成果物にクオリティの問題が見つかった時、あなたの対応は？"
+        category_id: "business_os"
+        choices:
+          - id: "a"
+            label: "すぐにチームミーティングを開き、全員で原因と対策を議論する"
+          - id: "b"
+            label: "まず自分で原因を調査し、改善案をまとめてから報告する"
+          - id: "c"
+            label: "影響範囲をデータで可視化し、優先度を論理的に判定する"
+          - id: "d"
+            label: "メンバー個々の状況をヒアリングし、無理のない改善計画を立てる"
+        source_reference: "OEJTS_E/I_adapted"
+
+      - id: "bos_007"
+        text: "上司から曖昧な指示を受けた場合、あなたはどうしますか？"
+        category_id: "business_os"
+        choices:
+          - id: "a"
+            label: "自分なりに解釈して、まず動き始めてから確認する"
+          - id: "b"
+            label: "具体的な要件をリスト化して確認を取ってから着手する"
+          - id: "c"
+            label: "過去の同様のケースを参考に、一般的な対応を取る"
+          - id: "d"
+            label: "同僚に相談し、複数の解釈を集めてから判断する"
+        source_reference: "IPIP_Conscientiousness_adapted"
+
+      - id: "bos_008"
+        text: "複数のタスクが同時に降ってきた時、あなたの対処法は？"
+        category_id: "business_os"
+        choices:
+          - id: "a"
+            label: "期限と重要度でマトリクスを作り、順序を厳密に決める"
+          - id: "b"
+            label: "直感的に面白そうなものから手をつけ、気分で切り替える"
+          - id: "c"
+            label: "チームに相談して分担を決め、協力して進める"
+          - id: "d"
+            label: "全体を俯瞰してパターンを見出し、まとめて効率的に処理する"
+        source_reference: "OEJTS_J/P_adapted"
+
+      - id: "bos_009"
+        text: "プレゼン資料を作成する際のスタイルは？"
+        category_id: "business_os"
+        choices:
+          - id: "a"
+            label: "ビジョンやコンセプトを大きく打ち出し、ストーリーで引きつける"
+          - id: "b"
+            label: "具体的な数値・事例・証拠を積み上げて説得力を持たせる"
+          - id: "c"
+            label: "聞き手の感情に響くエピソードや共感ポイントを重視する"
+          - id: "d"
+            label: "構造化された論理展開で、結論を明確に示す"
+        source_reference: "OEJTS_S/N_adapted"
+
+  - id: "communication"
+    name: "Communication"
+    order: 2
+    questions:
+      - id: "com_001"
+        text: "チームメンバーからの相談への対応として、最も自然に取る行動は？"
+        category_id: "communication"
+        choices:
+          - id: "a"
+            label: "まず相手の気持ちに寄り添い、話を最後まで聞く"
+          - id: "b"
+            label: "問題を構造化し、具体的な解決策を提示する"
+          - id: "c"
+            label: "関連する人を巻き込んで、チームで解決策を議論する"
+          - id: "d"
+            label: "類似の過去事例や参考資料を探して共有する"
+        source_reference: "OEJTS_T/F_adapted"
+
+      - id: "com_002"
+        text: "会議やミーティングでの理想的な進行スタイルは？"
+        category_id: "communication"
+        choices:
+          - id: "a"
+            label: "自由にアイデアを出し合い、発散させてから収束する"
+          - id: "b"
+            label: "アジェンダに沿って時間通りに結論を出す"
+          - id: "c"
+            label: "参加者の意見を一人ずつ丁寧に確認していく"
+          - id: "d"
+            label: "事前に資料を共有し、議論は論点のみに絞る"
+        source_reference: "OEJTS_J/P_adapted"
+
+      - id: "com_003"
+        text: "上司や顧客への報告・説明で最も得意なスタイルは？"
+        category_id: "communication"
+        choices:
+          - id: "a"
+            label: "図やチャートを多用し、全体像を視覚的に伝える"
+          - id: "b"
+            label: "数値とファクトを中心に、論理的に積み上げて説明する"
+          - id: "c"
+            label: "ストーリー仕立てで、相手の関心に合わせて語る"
+          - id: "d"
+            label: "要点を箇条書きにし、簡潔に結論から伝える"
+        source_reference: "OEJTS_S/N_adapted"
+
+      - id: "com_004"
+        text: "意見の対立が生じた時、あなたが取りがちな対応は？"
+        category_id: "communication"
+        choices:
+          - id: "a"
+            label: "双方の立場を理解した上で、妥協点を探る"
+          - id: "b"
+            label: "客観的な事実を提示し、論理で説得を試みる"
+          - id: "c"
+            label: "一旦持ち帰り、冷静に整理してから再議論する"
+          - id: "d"
+            label: "第三者の意見を求め、多角的な視点を取り入れる"
+        source_reference: "IPIP-NEO_Agreeableness_adapted"
+
+      - id: "com_005"
+        text: "テキストコミュニケーション（Slack/メール）で心がけていることは？"
+        category_id: "communication"
+        choices:
+          - id: "a"
+            label: "絵文字やリアクションを活用し、温かみを出す"
+          - id: "b"
+            label: "簡潔に要件のみを伝え、余計な装飾は省く"
+          - id: "c"
+            label: "相手の理解度に合わせて説明の粒度を調整する"
+          - id: "d"
+            label: "箇条書きで構造化し、認識齟齬を防ぐ"
+        source_reference: "OEJTS_T/F_adapted"
+
+      - id: "com_006"
+        text: "新メンバーがチームに加わった時、あなたの関わり方は？"
+        category_id: "communication"
+        choices:
+          - id: "a"
+            label: "ランチや雑談で積極的に距離を縮める"
+          - id: "b"
+            label: "必要な情報をドキュメントにまとめて渡す"
+          - id: "c"
+            label: "困ったことがあれば声をかけてねと伝え、見守る"
+          - id: "d"
+            label: "ペアワークやモブセッションに誘い、一緒に作業する"
+        source_reference: "OEJTS_E/I_adapted"
+
+      - id: "com_007"
+        text: "フィードバックを伝える際に最も重視することは？"
+        category_id: "communication"
+        choices:
+          - id: "a"
+            label: "具体的な事実と改善案をセットで伝える"
+          - id: "b"
+            label: "まず良い点を認めてから、改善点を柔らかく伝える"
+          - id: "c"
+            label: "データや成果指標を示し、客観的に伝える"
+          - id: "d"
+            label: "1対1の場を設け、相手のペースに合わせて対話する"
+        source_reference: "IPIP-NEO_Agreeableness_adapted"
+
+      - id: "com_008"
+        text: "リモートワークでのコミュニケーションについて、あなたの考えは？"
+        category_id: "communication"
+        choices:
+          - id: "a"
+            label: "定期的にビデオ通話で顔を合わせ、雑談の時間も確保したい"
+          - id: "b"
+            label: "非同期テキストベースで効率よく情報共有できれば十分"
+          - id: "c"
+            label: "必要な時だけ短時間で集中的にミーティングしたい"
+          - id: "d"
+            label: "ペアプロやバーチャルオフィスで常時つながっていたい"
+        source_reference: "OEJTS_E/I_adapted"
+
+      - id: "com_009"
+        text: "複雑な技術的内容を非エンジニアに説明する時のアプローチは？"
+        category_id: "communication"
+        choices:
+          - id: "a"
+            label: "身近な例え話やアナロジーを使って直感的に理解させる"
+          - id: "b"
+            label: "図解やフローチャートで視覚的にステップを示す"
+          - id: "c"
+            label: "正確さを重視し、簡略化しすぎないよう段階的に説明する"
+          - id: "d"
+            label: "相手の関心事に紐づけて、メリット中心に伝える"
+        source_reference: "OEJTS_S/N_adapted"
+
+  - id: "lifestyle"
+    name: "Lifestyle/Hobbies"
+    order: 3
+    questions:
+      - id: "lif_001"
+        text: "休日の過ごし方として、最もリフレッシュできるのは？"
+        category_id: "lifestyle"
+        choices:
+          - id: "a"
+            label: "友人や仲間と集まってアクティビティを楽しむ"
+          - id: "b"
+            label: "一人で読書や映画鑑賞など静かに過ごす"
+          - id: "c"
+            label: "新しい場所を探索し、未知の体験をする"
+          - id: "d"
+            label: "自宅で趣味の制作や学習に没頭する"
+        source_reference: "OEJTS_E/I_adapted"
+
+      - id: "lif_002"
+        text: "新しい趣味を始める時のきっかけとして多いのは？"
+        category_id: "lifestyle"
+        choices:
+          - id: "a"
+            label: "面白そうだと直感で感じたらすぐ飛び込む"
+          - id: "b"
+            label: "レビューや評価を調べ、自分に合うか慎重に判断する"
+          - id: "c"
+            label: "友人や知人に誘われて一緒に始める"
+          - id: "d"
+            label: "スキルアップや自己成長につながるかで選ぶ"
+        source_reference: "IPIP-NEO_Openness_adapted"
+
+      - id: "lif_003"
+        text: "長期の旅行を計画する時のスタイルは？"
+        category_id: "lifestyle"
+        choices:
+          - id: "a"
+            label: "行き先と宿だけ決めて、現地で臨機応変に動く"
+          - id: "b"
+            label: "日程・ルート・予算を詳細に計画してから出発する"
+          - id: "c"
+            label: "同行者の希望を聞いて、全員が楽しめるプランにする"
+          - id: "d"
+            label: "ガイドブックやブログで情報を集め、効率的に回る"
+        source_reference: "OEJTS_J/P_adapted"
+
+      - id: "lif_004"
+        text: "自分の理想的な学習スタイルに最も近いのは？"
+        category_id: "lifestyle"
+        choices:
+          - id: "a"
+            label: "まず手を動かし、試行錯誤しながら体得する"
+          - id: "b"
+            label: "体系的な教材で基礎から順序立てて学ぶ"
+          - id: "c"
+            label: "勉強会やコミュニティで他者と議論しながら学ぶ"
+          - id: "d"
+            label: "実践的な課題を設定し、解決を通じて学ぶ"
+        source_reference: "IPIP_Conscientiousness_adapted"
+
+      - id: "lif_005"
+        text: "理想的な住環境として最も重視するのは？"
+        category_id: "lifestyle"
+        choices:
+          - id: "a"
+            label: "人が集まるカフェや商業施設が近い賑やかなエリア"
+          - id: "b"
+            label: "静かで自然が多く、集中できる落ち着いた環境"
+          - id: "c"
+            label: "交通の便がよく、効率的に移動できる利便性"
+          - id: "d"
+            label: "個性的な店や文化施設がある刺激的な街"
+        source_reference: "OEJTS_E/I_adapted"
+
+      - id: "lif_006"
+        text: "ストレスを感じた時の対処法として最も自然なのは？"
+        category_id: "lifestyle"
+        choices:
+          - id: "a"
+            label: "友人に話を聞いてもらい、気持ちを共有する"
+          - id: "b"
+            label: "一人で運動や散歩をして、頭をリセットする"
+          - id: "c"
+            label: "原因を分析し、具体的な対策を立てる"
+          - id: "d"
+            label: "好きなことに没頭して、気分転換する"
+        source_reference: "IPIP-NEO_Extraversion_adapted"
+
+      - id: "lif_007"
+        text: "読書や情報収集で好むジャンルは？"
+        category_id: "lifestyle"
+        choices:
+          - id: "a"
+            label: "具体的なハウツーや実践的なスキル本"
+          - id: "b"
+            label: "未来予測やビジョナリーな思想書"
+          - id: "c"
+            label: "人間関係やコミュニケーションに関する本"
+          - id: "d"
+            label: "歴史や事例から学ぶケーススタディ"
+        source_reference: "OEJTS_S/N_adapted"
+
+      - id: "lif_008"
+        text: "友人グループでのイベント幹事を頼まれた時の反応は？"
+        category_id: "lifestyle"
+        choices:
+          - id: "a"
+            label: "喜んで引き受け、みんなが楽しめる企画を考える"
+          - id: "b"
+            label: "引き受けるが、事前に細かく計画を立ててから動く"
+          - id: "c"
+            label: "できれば他の人に任せたいが、頼まれれば対応する"
+          - id: "d"
+            label: "大枠だけ決めて、当日はノリと勢いで楽しむ"
+        source_reference: "OEJTS_E/I_adapted"
+
+      - id: "lif_009"
+        text: "買い物をする時の意思決定スタイルは？"
+        category_id: "lifestyle"
+        choices:
+          - id: "a"
+            label: "スペックやレビューを比較し、最もコスパが良いものを選ぶ"
+          - id: "b"
+            label: "直感で「これだ」と感じたものを即決する"
+          - id: "c"
+            label: "信頼できる人のおすすめを参考にする"
+          - id: "d"
+            label: "長期的な使い勝手やブランドの信頼性で選ぶ"
+        source_reference: "OEJTS_T/F_adapted"
+
+  - id: "interests"
+    name: "Interests & Preferences"
+    order: 4
+    questions:
+      - id: "int_001"
+        text: "興味のある技術分野を選んでください（複数選択可）"
+        category_id: "interests"
+        question_type: "multi_select"
+        min_select: 1
+        max_select: 10
+        options:
+          - id: "web_frontend"
+            label: "Webフロントエンド"
+            tags: ["frontend", "web", "ui/ux"]
+          - id: "web_backend"
+            label: "Webバックエンド"
+            tags: ["backend", "api", "server-side"]
+          - id: "mobile"
+            label: "モバイルアプリ"
+            tags: ["mobile", "ios", "android"]
+          - id: "cloud_infra"
+            label: "クラウド/インフラ"
+            tags: ["cloud", "infrastructure", "devops"]
+          - id: "data_science"
+            label: "データサイエンス/ML"
+            tags: ["data-science", "machine-learning", "analytics"]
+          - id: "security"
+            label: "セキュリティ"
+            tags: ["security", "cybersecurity"]
+          - id: "embedded"
+            label: "組込み/IoT"
+            tags: ["embedded", "iot", "hardware"]
+          - id: "game_dev"
+            label: "ゲーム開発"
+            tags: ["game-development", "unity", "graphics"]
+          - id: "blockchain"
+            label: "ブロックチェーン/Web3"
+            tags: ["blockchain", "web3", "crypto"]
+          - id: "ai_llm"
+            label: "生成AI/LLM"
+            tags: ["generative-ai", "llm", "prompt-engineering"]
+          - id: "open_source"
+            label: "OSS活動"
+            tags: ["open-source", "community", "oss"]
+          - id: "product_mgmt"
+            label: "プロダクトマネジメント"
+            tags: ["product-management", "roadmap", "user-research"]
+
+      - id: "int_002"
+        text: "好きなリフレッシュ方法は？（複数選択可）"
+        category_id: "interests"
+        question_type: "multi_select"
+        min_select: 1
+        max_select: 8
+        options:
+          - id: "exercise"
+            label: "運動・スポーツ"
+            tags: ["fitness", "sports"]
+          - id: "reading"
+            label: "読書"
+            tags: ["reading", "books"]
+          - id: "gaming"
+            label: "ゲーム"
+            tags: ["gaming"]
+          - id: "cooking"
+            label: "料理"
+            tags: ["cooking", "food"]
+          - id: "music"
+            label: "音楽鑑賞・演奏"
+            tags: ["music"]
+          - id: "outdoor"
+            label: "アウトドア・自然"
+            tags: ["outdoor", "nature"]
+          - id: "art"
+            label: "アート・クリエイティブ制作"
+            tags: ["art", "creative"]
+          - id: "travel"
+            label: "旅行"
+            tags: ["travel"]
+          - id: "meditation"
+            label: "瞑想・マインドフルネス"
+            tags: ["meditation", "mindfulness"]
+          - id: "socializing"
+            label: "人との交流・飲み会"
+            tags: ["socializing", "networking"]
+
+      - id: "int_003"
+        text: "仕事で使っている・使いたいツール/環境は？（複数選択可）"
+        category_id: "interests"
+        question_type: "multi_select"
+        min_select: 1
+        max_select: 10
+        options:
+          - id: "vscode"
+            label: "VS Code / Cursor"
+            tags: ["vscode", "ide"]
+          - id: "jetbrains"
+            label: "JetBrains IDE"
+            tags: ["jetbrains", "intellij"]
+          - id: "vim_neovim"
+            label: "Vim / Neovim"
+            tags: ["vim", "neovim", "terminal"]
+          - id: "docker"
+            label: "Docker / コンテナ"
+            tags: ["docker", "containers"]
+          - id: "ci_cd"
+            label: "CI/CD パイプライン"
+            tags: ["ci/cd", "automation"]
+          - id: "notion"
+            label: "Notion / ドキュメントツール"
+            tags: ["notion", "documentation"]
+          - id: "figma"
+            label: "Figma / デザインツール"
+            tags: ["figma", "design-tools"]
+          - id: "terminal"
+            label: "ターミナル中心のワークフロー"
+            tags: ["terminal", "cli", "shell"]
+          - id: "ai_copilot"
+            label: "AIコーディングアシスタント"
+            tags: ["ai-assistant", "copilot"]
+          - id: "linux"
+            label: "Linux デスクトップ"
+            tags: ["linux", "open-source"]
+
+      - id: "int_004"
+        text: "好きな作業環境の雰囲気は？（複数選択可）"
+        category_id: "interests"
+        question_type: "multi_select"
+        min_select: 1
+        max_select: 5
+        options:
+          - id: "quiet_home"
+            label: "静かな自宅"
+            tags: ["remote-work", "quiet-environment"]
+          - id: "cafe"
+            label: "カフェ・コワーキングスペース"
+            tags: ["cafe-work", "coworking"]
+          - id: "office_collab"
+            label: "活気あるオフィス"
+            tags: ["office", "in-person"]
+          - id: "nature_spot"
+            label: "自然の中（公園・テラス）"
+            tags: ["nature", "outdoor-work"]
+          - id: "late_night"
+            label: "深夜の静寂な時間帯"
+            tags: ["night-owl", "deep-focus"]
+          - id: "music_bg"
+            label: "BGM付きの環境"
+            tags: ["music", "ambient"]
+          - id: "pair_work"
+            label: "誰かと一緒に作業"
+            tags: ["pair-work", "collaborative"]
+
+      - id: "int_005"
+        text: "仕事の進め方で共感するスタイルは？（複数選択可）"
+        category_id: "interests"
+        question_type: "multi_select"
+        min_select: 1
+        max_select: 6
+        options:
+          - id: "agile"
+            label: "アジャイル・スクラム"
+            tags: ["agile", "scrum", "sprint"]
+          - id: "kanban"
+            label: "カンバン・フロー重視"
+            tags: ["kanban", "flow", "wip-limit"]
+          - id: "deep_work"
+            label: "ディープワーク（集中時間確保）"
+            tags: ["deep-work", "focus-time"]
+          - id: "async_first"
+            label: "非同期ファースト"
+            tags: ["async-first", "remote-async"]
+          - id: "doc_driven"
+            label: "ドキュメント駆動"
+            tags: ["documentation-driven", "rfc"]
+          - id: "prototype_first"
+            label: "プロトタイプファースト"
+            tags: ["prototype-first", "rapid-iteration"]
+          - id: "test_driven"
+            label: "テスト駆動開発"
+            tags: ["tdd", "test-driven"]
+          - id: "mob_programming"
+            label: "モブプログラミング"
+            tags: ["mob-programming", "ensemble"]

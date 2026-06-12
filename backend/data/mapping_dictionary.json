@@ -1,0 +1,153 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "axis_polarity": {
+      "extroverted_introverted": "positive=Extroverted, negative=Introverted",
+      "sensing_intuition": "positive=Sensing, negative=iNtuition",
+      "thinking_feeling": "positive=Thinking, negative=Feeling",
+      "judging_perceiving": "positive=Judging, negative=Perceiving"
+    },
+    "theoretical_bounds": {
+      "extroverted_introverted": {"min": -120, "max": 156},
+      "sensing_intuition": {"min": -106, "max": 131},
+      "thinking_feeling": {"min": -129, "max": 137},
+      "judging_perceiving": {"min": -119, "max": 137}
+    }
+  },
+  "mappings": [
+    {"question_id": "bos_001", "choice_id": "a", "scores": {"extroverted_introverted": 8, "sensing_intuition": 0, "thinking_feeling": -2, "judging_perceiving": -3}},
+    {"question_id": "bos_001", "choice_id": "b", "scores": {"extroverted_introverted": -7, "sensing_intuition": 0, "thinking_feeling": 4, "judging_perceiving": 3}},
+    {"question_id": "bos_001", "choice_id": "c", "scores": {"extroverted_introverted": -3, "sensing_intuition": 6, "thinking_feeling": 7, "judging_perceiving": 2}},
+    {"question_id": "bos_001", "choice_id": "d", "scores": {"extroverted_introverted": -2, "sensing_intuition": 7, "thinking_feeling": 0, "judging_perceiving": 5}},
+
+    {"question_id": "bos_002", "choice_id": "a", "scores": {"extroverted_introverted": 2, "sensing_intuition": -7, "thinking_feeling": 0, "judging_perceiving": -5}},
+    {"question_id": "bos_002", "choice_id": "b", "scores": {"extroverted_introverted": -3, "sensing_intuition": 5, "thinking_feeling": 3, "judging_perceiving": 4}},
+    {"question_id": "bos_002", "choice_id": "c", "scores": {"extroverted_introverted": 6, "sensing_intuition": 0, "thinking_feeling": -6, "judging_perceiving": 0}},
+    {"question_id": "bos_002", "choice_id": "d", "scores": {"extroverted_introverted": -4, "sensing_intuition": 4, "thinking_feeling": 5, "judging_perceiving": 3}},
+
+    {"question_id": "bos_003", "choice_id": "a", "scores": {"extroverted_introverted": -2, "sensing_intuition": 5, "thinking_feeling": 3, "judging_perceiving": 8}},
+    {"question_id": "bos_003", "choice_id": "b", "scores": {"extroverted_introverted": 0, "sensing_intuition": -3, "thinking_feeling": 0, "judging_perceiving": -6}},
+    {"question_id": "bos_003", "choice_id": "c", "scores": {"extroverted_introverted": 5, "sensing_intuition": 0, "thinking_feeling": -5, "judging_perceiving": -3}},
+    {"question_id": "bos_003", "choice_id": "d", "scores": {"extroverted_introverted": -4, "sensing_intuition": 3, "thinking_feeling": 6, "judging_perceiving": 5}},
+
+    {"question_id": "bos_004", "choice_id": "a", "scores": {"extroverted_introverted": 0, "sensing_intuition": 3, "thinking_feeling": 8, "judging_perceiving": 2}},
+    {"question_id": "bos_004", "choice_id": "b", "scores": {"extroverted_introverted": 3, "sensing_intuition": 0, "thinking_feeling": -7, "judging_perceiving": -2}},
+    {"question_id": "bos_004", "choice_id": "c", "scores": {"extroverted_introverted": 2, "sensing_intuition": -5, "thinking_feeling": -3, "judging_perceiving": -6}},
+    {"question_id": "bos_004", "choice_id": "d", "scores": {"extroverted_introverted": -4, "sensing_intuition": 6, "thinking_feeling": 2, "judging_perceiving": 7}},
+
+    {"question_id": "bos_005", "choice_id": "a", "scores": {"extroverted_introverted": 3, "sensing_intuition": -5, "thinking_feeling": -2, "judging_perceiving": -6}},
+    {"question_id": "bos_005", "choice_id": "b", "scores": {"extroverted_introverted": -5, "sensing_intuition": 6, "thinking_feeling": 3, "judging_perceiving": 4}},
+    {"question_id": "bos_005", "choice_id": "c", "scores": {"extroverted_introverted": 5, "sensing_intuition": 2, "thinking_feeling": -4, "judging_perceiving": 0}},
+    {"question_id": "bos_005", "choice_id": "d", "scores": {"extroverted_introverted": -3, "sensing_intuition": 4, "thinking_feeling": 5, "judging_perceiving": 6}},
+
+    {"question_id": "bos_006", "choice_id": "a", "scores": {"extroverted_introverted": 7, "sensing_intuition": 0, "thinking_feeling": -3, "judging_perceiving": -2}},
+    {"question_id": "bos_006", "choice_id": "b", "scores": {"extroverted_introverted": -6, "sensing_intuition": 3, "thinking_feeling": 4, "judging_perceiving": 3}},
+    {"question_id": "bos_006", "choice_id": "c", "scores": {"extroverted_introverted": -2, "sensing_intuition": 5, "thinking_feeling": 7, "judging_perceiving": 2}},
+    {"question_id": "bos_006", "choice_id": "d", "scores": {"extroverted_introverted": 4, "sensing_intuition": 0, "thinking_feeling": -6, "judging_perceiving": 4}},
+
+    {"question_id": "bos_007", "choice_id": "a", "scores": {"extroverted_introverted": 2, "sensing_intuition": -4, "thinking_feeling": 0, "judging_perceiving": -7}},
+    {"question_id": "bos_007", "choice_id": "b", "scores": {"extroverted_introverted": -3, "sensing_intuition": 5, "thinking_feeling": 3, "judging_perceiving": 7}},
+    {"question_id": "bos_007", "choice_id": "c", "scores": {"extroverted_introverted": -2, "sensing_intuition": 6, "thinking_feeling": 0, "judging_perceiving": 3}},
+    {"question_id": "bos_007", "choice_id": "d", "scores": {"extroverted_introverted": 6, "sensing_intuition": 0, "thinking_feeling": -4, "judging_perceiving": -2}},
+
+    {"question_id": "bos_008", "choice_id": "a", "scores": {"extroverted_introverted": -2, "sensing_intuition": 4, "thinking_feeling": 5, "judging_perceiving": 8}},
+    {"question_id": "bos_008", "choice_id": "b", "scores": {"extroverted_introverted": 2, "sensing_intuition": -5, "thinking_feeling": -3, "judging_perceiving": -7}},
+    {"question_id": "bos_008", "choice_id": "c", "scores": {"extroverted_introverted": 7, "sensing_intuition": 0, "thinking_feeling": -4, "judging_perceiving": 0}},
+    {"question_id": "bos_008", "choice_id": "d", "scores": {"extroverted_introverted": -3, "sensing_intuition": -4, "thinking_feeling": 2, "judging_perceiving": -3}},
+
+    {"question_id": "bos_009", "choice_id": "a", "scores": {"extroverted_introverted": 3, "sensing_intuition": -7, "thinking_feeling": -3, "judging_perceiving": -2}},
+    {"question_id": "bos_009", "choice_id": "b", "scores": {"extroverted_introverted": -2, "sensing_intuition": 7, "thinking_feeling": 4, "judging_perceiving": 3}},
+    {"question_id": "bos_009", "choice_id": "c", "scores": {"extroverted_introverted": 4, "sensing_intuition": 0, "thinking_feeling": -7, "judging_perceiving": 0}},
+    {"question_id": "bos_009", "choice_id": "d", "scores": {"extroverted_introverted": -3, "sensing_intuition": 2, "thinking_feeling": 6, "judging_perceiving": 4}},
+
+    {"question_id": "com_001", "choice_id": "a", "scores": {"extroverted_introverted": 3, "sensing_intuition": 0, "thinking_feeling": -7, "judging_perceiving": 0}},
+    {"question_id": "com_001", "choice_id": "b", "scores": {"extroverted_introverted": -3, "sensing_intuition": 3, "thinking_feeling": 7, "judging_perceiving": 3}},
+    {"question_id": "com_001", "choice_id": "c", "scores": {"extroverted_introverted": 7, "sensing_intuition": 0, "thinking_feeling": -3, "judging_perceiving": -2}},
+    {"question_id": "com_001", "choice_id": "d", "scores": {"extroverted_introverted": -5, "sensing_intuition": 5, "thinking_feeling": 2, "judging_perceiving": 2}},
+
+    {"question_id": "com_002", "choice_id": "a", "scores": {"extroverted_introverted": 5, "sensing_intuition": -4, "thinking_feeling": -2, "judging_perceiving": -6}},
+    {"question_id": "com_002", "choice_id": "b", "scores": {"extroverted_introverted": -3, "sensing_intuition": 3, "thinking_feeling": 3, "judging_perceiving": 7}},
+    {"question_id": "com_002", "choice_id": "c", "scores": {"extroverted_introverted": 3, "sensing_intuition": 0, "thinking_feeling": -5, "judging_perceiving": 0}},
+    {"question_id": "com_002", "choice_id": "d", "scores": {"extroverted_introverted": -5, "sensing_intuition": 4, "thinking_feeling": 5, "judging_perceiving": 4}},
+
+    {"question_id": "com_003", "choice_id": "a", "scores": {"extroverted_introverted": 2, "sensing_intuition": -5, "thinking_feeling": -2, "judging_perceiving": 0}},
+    {"question_id": "com_003", "choice_id": "b", "scores": {"extroverted_introverted": -2, "sensing_intuition": 6, "thinking_feeling": 6, "judging_perceiving": 3}},
+    {"question_id": "com_003", "choice_id": "c", "scores": {"extroverted_introverted": 5, "sensing_intuition": -3, "thinking_feeling": -5, "judging_perceiving": -2}},
+    {"question_id": "com_003", "choice_id": "d", "scores": {"extroverted_introverted": -4, "sensing_intuition": 4, "thinking_feeling": 4, "judging_perceiving": 5}},
+
+    {"question_id": "com_004", "choice_id": "a", "scores": {"extroverted_introverted": 3, "sensing_intuition": 0, "thinking_feeling": -6, "judging_perceiving": 2}},
+    {"question_id": "com_004", "choice_id": "b", "scores": {"extroverted_introverted": -2, "sensing_intuition": 3, "thinking_feeling": 7, "judging_perceiving": 0}},
+    {"question_id": "com_004", "choice_id": "c", "scores": {"extroverted_introverted": -5, "sensing_intuition": 2, "thinking_feeling": 3, "judging_perceiving": 3}},
+    {"question_id": "com_004", "choice_id": "d", "scores": {"extroverted_introverted": 5, "sensing_intuition": -3, "thinking_feeling": -4, "judging_perceiving": -3}},
+
+    {"question_id": "com_005", "choice_id": "a", "scores": {"extroverted_introverted": 4, "sensing_intuition": 0, "thinking_feeling": -6, "judging_perceiving": -2}},
+    {"question_id": "com_005", "choice_id": "b", "scores": {"extroverted_introverted": -4, "sensing_intuition": 3, "thinking_feeling": 5, "judging_perceiving": 3}},
+    {"question_id": "com_005", "choice_id": "c", "scores": {"extroverted_introverted": 2, "sensing_intuition": -3, "thinking_feeling": -3, "judging_perceiving": 0}},
+    {"question_id": "com_005", "choice_id": "d", "scores": {"extroverted_introverted": -3, "sensing_intuition": 4, "thinking_feeling": 4, "judging_perceiving": 5}},
+
+    {"question_id": "com_006", "choice_id": "a", "scores": {"extroverted_introverted": 8, "sensing_intuition": 0, "thinking_feeling": -3, "judging_perceiving": -2}},
+    {"question_id": "com_006", "choice_id": "b", "scores": {"extroverted_introverted": -5, "sensing_intuition": 4, "thinking_feeling": 3, "judging_perceiving": 5}},
+    {"question_id": "com_006", "choice_id": "c", "scores": {"extroverted_introverted": -6, "sensing_intuition": 0, "thinking_feeling": 0, "judging_perceiving": 0}},
+    {"question_id": "com_006", "choice_id": "d", "scores": {"extroverted_introverted": 6, "sensing_intuition": -2, "thinking_feeling": -2, "judging_perceiving": -3}},
+
+    {"question_id": "com_007", "choice_id": "a", "scores": {"extroverted_introverted": 0, "sensing_intuition": 4, "thinking_feeling": 5, "judging_perceiving": 3}},
+    {"question_id": "com_007", "choice_id": "b", "scores": {"extroverted_introverted": 3, "sensing_intuition": 0, "thinking_feeling": -6, "judging_perceiving": 0}},
+    {"question_id": "com_007", "choice_id": "c", "scores": {"extroverted_introverted": -3, "sensing_intuition": 5, "thinking_feeling": 6, "judging_perceiving": 2}},
+    {"question_id": "com_007", "choice_id": "d", "scores": {"extroverted_introverted": 4, "sensing_intuition": -3, "thinking_feeling": -5, "judging_perceiving": -3}},
+
+    {"question_id": "com_008", "choice_id": "a", "scores": {"extroverted_introverted": 7, "sensing_intuition": 0, "thinking_feeling": -3, "judging_perceiving": 3}},
+    {"question_id": "com_008", "choice_id": "b", "scores": {"extroverted_introverted": -7, "sensing_intuition": 3, "thinking_feeling": 4, "judging_perceiving": 0}},
+    {"question_id": "com_008", "choice_id": "c", "scores": {"extroverted_introverted": -3, "sensing_intuition": 2, "thinking_feeling": 3, "judging_perceiving": 4}},
+    {"question_id": "com_008", "choice_id": "d", "scores": {"extroverted_introverted": 8, "sensing_intuition": -3, "thinking_feeling": -4, "judging_perceiving": -4}},
+
+    {"question_id": "com_009", "choice_id": "a", "scores": {"extroverted_introverted": 2, "sensing_intuition": -5, "thinking_feeling": -3, "judging_perceiving": -2}},
+    {"question_id": "com_009", "choice_id": "b", "scores": {"extroverted_introverted": 0, "sensing_intuition": 5, "thinking_feeling": 2, "judging_perceiving": 3}},
+    {"question_id": "com_009", "choice_id": "c", "scores": {"extroverted_introverted": -3, "sensing_intuition": 4, "thinking_feeling": 5, "judging_perceiving": 4}},
+    {"question_id": "com_009", "choice_id": "d", "scores": {"extroverted_introverted": 4, "sensing_intuition": -3, "thinking_feeling": -5, "judging_perceiving": 0}},
+
+    {"question_id": "lif_001", "choice_id": "a", "scores": {"extroverted_introverted": 7, "sensing_intuition": 2, "thinking_feeling": -2, "judging_perceiving": -2}},
+    {"question_id": "lif_001", "choice_id": "b", "scores": {"extroverted_introverted": -7, "sensing_intuition": 2, "thinking_feeling": 2, "judging_perceiving": 0}},
+    {"question_id": "lif_001", "choice_id": "c", "scores": {"extroverted_introverted": 3, "sensing_intuition": -5, "thinking_feeling": 0, "judging_perceiving": -5}},
+    {"question_id": "lif_001", "choice_id": "d", "scores": {"extroverted_introverted": -5, "sensing_intuition": 3, "thinking_feeling": 2, "judging_perceiving": 3}},
+
+    {"question_id": "lif_002", "choice_id": "a", "scores": {"extroverted_introverted": 2, "sensing_intuition": -6, "thinking_feeling": -2, "judging_perceiving": -6}},
+    {"question_id": "lif_002", "choice_id": "b", "scores": {"extroverted_introverted": -3, "sensing_intuition": 5, "thinking_feeling": 3, "judging_perceiving": 5}},
+    {"question_id": "lif_002", "choice_id": "c", "scores": {"extroverted_introverted": 6, "sensing_intuition": 0, "thinking_feeling": -4, "judging_perceiving": 0}},
+    {"question_id": "lif_002", "choice_id": "d", "scores": {"extroverted_introverted": -3, "sensing_intuition": 3, "thinking_feeling": 4, "judging_perceiving": 4}},
+
+    {"question_id": "lif_003", "choice_id": "a", "scores": {"extroverted_introverted": 2, "sensing_intuition": -3, "thinking_feeling": 0, "judging_perceiving": -7}},
+    {"question_id": "lif_003", "choice_id": "b", "scores": {"extroverted_introverted": -2, "sensing_intuition": 5, "thinking_feeling": 2, "judging_perceiving": 7}},
+    {"question_id": "lif_003", "choice_id": "c", "scores": {"extroverted_introverted": 5, "sensing_intuition": 0, "thinking_feeling": -5, "judging_perceiving": 2}},
+    {"question_id": "lif_003", "choice_id": "d", "scores": {"extroverted_introverted": -3, "sensing_intuition": 5, "thinking_feeling": 3, "judging_perceiving": 4}},
+
+    {"question_id": "lif_004", "choice_id": "a", "scores": {"extroverted_introverted": 2, "sensing_intuition": -3, "thinking_feeling": 2, "judging_perceiving": -5}},
+    {"question_id": "lif_004", "choice_id": "b", "scores": {"extroverted_introverted": -3, "sensing_intuition": 5, "thinking_feeling": 3, "judging_perceiving": 6}},
+    {"question_id": "lif_004", "choice_id": "c", "scores": {"extroverted_introverted": 6, "sensing_intuition": -2, "thinking_feeling": -4, "judging_perceiving": -2}},
+    {"question_id": "lif_004", "choice_id": "d", "scores": {"extroverted_introverted": -2, "sensing_intuition": 2, "thinking_feeling": 4, "judging_perceiving": 2}},
+
+    {"question_id": "lif_005", "choice_id": "a", "scores": {"extroverted_introverted": 7, "sensing_intuition": 3, "thinking_feeling": -2, "judging_perceiving": 0}},
+    {"question_id": "lif_005", "choice_id": "b", "scores": {"extroverted_introverted": -7, "sensing_intuition": 4, "thinking_feeling": 2, "judging_perceiving": 2}},
+    {"question_id": "lif_005", "choice_id": "c", "scores": {"extroverted_introverted": 0, "sensing_intuition": 3, "thinking_feeling": 5, "judging_perceiving": 4}},
+    {"question_id": "lif_005", "choice_id": "d", "scores": {"extroverted_introverted": 4, "sensing_intuition": -6, "thinking_feeling": -3, "judging_perceiving": -4}},
+
+    {"question_id": "lif_006", "choice_id": "a", "scores": {"extroverted_introverted": 7, "sensing_intuition": 0, "thinking_feeling": -5, "judging_perceiving": 0}},
+    {"question_id": "lif_006", "choice_id": "b", "scores": {"extroverted_introverted": -5, "sensing_intuition": 3, "thinking_feeling": 2, "judging_perceiving": 0}},
+    {"question_id": "lif_006", "choice_id": "c", "scores": {"extroverted_introverted": -2, "sensing_intuition": 3, "thinking_feeling": 7, "judging_perceiving": 4}},
+    {"question_id": "lif_006", "choice_id": "d", "scores": {"extroverted_introverted": -3, "sensing_intuition": -4, "thinking_feeling": -2, "judging_perceiving": -5}},
+
+    {"question_id": "lif_007", "choice_id": "a", "scores": {"extroverted_introverted": 0, "sensing_intuition": 7, "thinking_feeling": 3, "judging_perceiving": 3}},
+    {"question_id": "lif_007", "choice_id": "b", "scores": {"extroverted_introverted": 0, "sensing_intuition": -7, "thinking_feeling": -2, "judging_perceiving": -3}},
+    {"question_id": "lif_007", "choice_id": "c", "scores": {"extroverted_introverted": 4, "sensing_intuition": 0, "thinking_feeling": -6, "judging_perceiving": 0}},
+    {"question_id": "lif_007", "choice_id": "d", "scores": {"extroverted_introverted": -2, "sensing_intuition": 5, "thinking_feeling": 3, "judging_perceiving": 4}},
+
+    {"question_id": "lif_008", "choice_id": "a", "scores": {"extroverted_introverted": 8, "sensing_intuition": 0, "thinking_feeling": -3, "judging_perceiving": -2}},
+    {"question_id": "lif_008", "choice_id": "b", "scores": {"extroverted_introverted": 2, "sensing_intuition": 4, "thinking_feeling": 2, "judging_perceiving": 7}},
+    {"question_id": "lif_008", "choice_id": "c", "scores": {"extroverted_introverted": -6, "sensing_intuition": 0, "thinking_feeling": 2, "judging_perceiving": 2}},
+    {"question_id": "lif_008", "choice_id": "d", "scores": {"extroverted_introverted": 5, "sensing_intuition": -3, "thinking_feeling": -3, "judging_perceiving": -7}},
+
+    {"question_id": "lif_009", "choice_id": "a", "scores": {"extroverted_introverted": -2, "sensing_intuition": 5, "thinking_feeling": 7, "judging_perceiving": 3}},
+    {"question_id": "lif_009", "choice_id": "b", "scores": {"extroverted_introverted": 2, "sensing_intuition": -5, "thinking_feeling": -3, "judging_perceiving": -6}},
+    {"question_id": "lif_009", "choice_id": "c", "scores": {"extroverted_introverted": 5, "sensing_intuition": 0, "thinking_feeling": -5, "judging_perceiving": 0}},
+    {"question_id": "lif_009", "choice_id": "d", "scores": {"extroverted_introverted": -3, "sensing_intuition": 4, "thinking_feeling": 3, "judging_perceiving": 5}}
+  ]
+}
