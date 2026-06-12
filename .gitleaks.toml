@@ -1,0 +1,7 @@
+[allowlist]
+description = "Agent Profiler gitleaks allowlist"
+paths = [
+  '''.env''',
+  '''backend/.env''',
+  '''frontend/.env.*''',
+]

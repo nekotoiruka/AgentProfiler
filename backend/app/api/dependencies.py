@@ -75,37 +75,43 @@ async def init_services() -> None:
 
 def get_mapping_loader() -> MappingDictionaryLoader:
   """MappingDictionaryLoaderインスタンスを返す"""
-  assert _mapping_loader is not None, "Services not initialized"
+  if _mapping_loader is None:
+    raise RuntimeError("Services not initialized")
   return _mapping_loader
 
 
 def get_question_loader() -> QuestionDataLoader:
   """QuestionDataLoaderインスタンスを返す"""
-  assert _question_loader is not None, "Services not initialized"
+  if _question_loader is None:
+    raise RuntimeError("Services not initialized")
   return _question_loader
 
 
 def get_session_manager() -> SessionManager:
   """SessionManagerインスタンスを返す"""
-  assert _session_manager is not None, "Services not initialized"
+  if _session_manager is None:
+    raise RuntimeError("Services not initialized")
   return _session_manager
 
 
 def get_scoring_engine() -> ScoringEngine:
   """ScoringEngineインスタンスを返す"""
-  assert _scoring_engine is not None, "Services not initialized"
+  if _scoring_engine is None:
+    raise RuntimeError("Services not initialized")
   return _scoring_engine
 
 
 def get_normalizer() -> Normalizer:
   """Normalizerインスタンスを返す"""
-  assert _normalizer is not None, "Services not initialized"
+  if _normalizer is None:
+    raise RuntimeError("Services not initialized")
   return _normalizer
 
 
 def get_profile_generator() -> ProfileGenerator:
   """ProfileGeneratorインスタンスを返す"""
-  assert _profile_generator is not None, "Services not initialized"
+  if _profile_generator is None:
+    raise RuntimeError("Services not initialized")
   return _profile_generator
 
 
