@@ -120,4 +120,25 @@ npm run dev
 
 ## ライセンス
 
-MIT
+**デュアルライセンス方式**
+
+このプロジェクトは [GNU Affero General Public License v3.0 (AGPLv3)](./LICENSE) のもとで公開されています。
+
+- **個人・非営利・オープンソース利用**: AGPLv3 のもと、無料で自由にご利用いただけます。ただし、本ソフトウェアを利用・改変してネットワーク経由でサービスを提供する場合、AGPLv3 の条項に基づきソースコードの公開義務が発生します。
+- **商用利用**: ソースコード公開義務を免除する商用ライセンスを別途ご用意しています。クローズドソースでの組込み利用や SaaS 提供をご希望の場合はお問い合わせください。
+
+```
+Copyright (c) 2026 nekotoiruka
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+```
+
+商用ライセンスについてのお問い合わせ: [GitHub Issues](https://github.com/nekotoiruka/AgentProfiler/issues) または直接ご連絡ください。
