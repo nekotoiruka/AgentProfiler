@@ -79,6 +79,7 @@ class SessionManager:
           question_id TEXT NOT NULL,
           choice_id TEXT,
           text TEXT,
+          selected_options TEXT,
           submitted_at TEXT NOT NULL,
           PRIMARY KEY (session_id, question_id),
           FOREIGN KEY (session_id) REFERENCES sessions(session_id)
@@ -157,10 +158,16 @@ class SessionManager:
     # Sessionモデルを構築
     answers: dict[str, Answer] = {}
     for a_row in answer_rows:
+      # selected_options のデシリアライズ
+      selected_opts = None
+      if a_row["selected_options"]:
+        selected_opts = json.loads(a_row["selected_options"])
+
       answers[a_row["question_id"]] = Answer(
         question_id=a_row["question_id"],
         choice_id=a_row["choice_id"],
         text=a_row["text"],
+        selected_options=selected_opts,
         submitted_at=datetime.fromisoformat(a_row["submitted_at"]),
       )
 
@@ -192,6 +199,7 @@ class SessionManager:
     question_id: str,
     choice_id: str | None = None,
     text: str | None = None,
+    selected_options: list[str] | None = None,
   ) -> None:
     """回答を保存する（上書き対応）
 
@@ -235,18 +243,24 @@ class SessionManager:
           f"Session is not modifiable (status: {status}): {session_id}"
         )
 
+      # selected_options を JSON 文字列にシリアライズ
+      selected_options_json = (
+        json.dumps(selected_options) if selected_options else None
+      )
+
       # 回答の保存（UPSERT: 上書き対応）
       now = datetime.now(timezone.utc).isoformat()
       await db.execute(
         """
-        INSERT INTO answers (session_id, question_id, choice_id, text, submitted_at)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO answers (session_id, question_id, choice_id, text, selected_options, submitted_at)
+        VALUES (?, ?, ?, ?, ?, ?)
         ON CONFLICT (session_id, question_id)
         DO UPDATE SET choice_id = excluded.choice_id,
                       text = excluded.text,
+                      selected_options = excluded.selected_options,
                       submitted_at = excluded.submitted_at
         """,
-        (session_id, question_id, choice_id, text, now),
+        (session_id, question_id, choice_id, text, selected_options_json, now),
       )
 
       # セッションの updated_at を更新
