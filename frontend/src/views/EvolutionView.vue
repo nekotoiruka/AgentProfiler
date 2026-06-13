@@ -63,7 +63,12 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="py-8">
+  <div class="relative min-h-[calc(100vh-52px)] bg-background text-foreground py-8">
+    <!-- Ambient background glow (Evolution 限定) -->
+    <div class="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+      <div class="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-[120px] animate-float" />
+      <div class="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] rounded-full bg-gradient-to-tl from-cyan-500/8 to-transparent blur-[100px]" style="animation-delay: -3s" />
+    </div>
     <!-- Header -->
     <header class="mb-8">
       <h1 class="text-3xl font-bold tracking-tight gradient-text">Evolution</h1>

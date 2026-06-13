@@ -13,17 +13,11 @@ const navLinks = [
 </script>
 
 <template>
-  <div id="app-root" class="min-h-screen bg-background text-foreground font-sans">
-    <!-- Ambient background glow -->
-    <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-      <div class="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-[120px] animate-float" />
-      <div class="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] rounded-full bg-gradient-to-tl from-cyan-500/8 to-transparent blur-[100px]" style="animation-delay: -3s" />
-    </div>
-
+  <div id="app-root" class="min-h-screen font-sans">
     <!-- Nav -->
-    <nav class="sticky top-0 z-50 glass border-b border-white/5">
+    <nav class="sticky top-0 z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-zinc-200 dark:border-white/5">
       <div class="max-w-[1200px] mx-auto flex items-center justify-between px-6 py-3">
-        <router-link to="/" class="text-sm font-bold tracking-tight gradient-text">
+        <router-link to="/" class="text-sm font-bold tracking-tight text-violet-700">
           Agent Profiler
         </router-link>
         <div class="flex gap-1">
@@ -34,8 +28,8 @@ const navLinks = [
             :class="[
               'px-4 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
               currentPath === link.to
-                ? 'bg-primary/15 text-accent glow-sm'
-                : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'
+                ? 'bg-violet-100 dark:bg-primary/15 text-violet-700 dark:text-accent'
+                : 'text-zinc-500 hover:text-zinc-900 dark:text-muted-foreground dark:hover:text-foreground hover:bg-zinc-100 dark:hover:bg-surface-hover'
             ]"
           >
             {{ link.label }}
