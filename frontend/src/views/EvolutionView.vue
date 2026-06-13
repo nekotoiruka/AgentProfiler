@@ -1,11 +1,8 @@
 <script setup lang="ts">
 /**
- * EvolutionView — Agent Evolution メインページ
+ * EvolutionView — トモコレ風 Agent Evolution メインページ
  *
- * 3つのタブで構成:
- * 1. チャット: 分身セレクト + 1対1チャット
- * 2. ディスカッション: マルチエージェント議論シアター
- * 3. 設定: プロファイルロード + エージェント作成
+ * カジュアル & かわいいデザインで分身たちの世界を覗く体験を提供する。
  */
 
 import { ref, onMounted } from 'vue'
@@ -44,6 +41,12 @@ const {
   progress, totalExpectedTurns, startDiscussion, reset: resetDiscussion,
 } = useDiscussion()
 
+// --- アバター絵文字（エージェントごとに割り当て） ---
+const AVATARS = ['😊', '🤔', '😎', '🌟', '🎨', '🦊', '🐱', '🌈', '✨', '🍀']
+function getAvatar(index: number): string {
+  return AVATARS[index % AVATARS.length]
+}
+
 // --- Actions ---
 
 async function handleLoadProfile() {
@@ -51,22 +54,18 @@ async function handleLoadProfile() {
   loadError.value = null
 
   if (!profileId.value.match(/^prof_\d{6}$/)) {
-    loadError.value = 'profile_id は prof_000001 の形式で入力してください'
+    loadError.value = 'prof_000001 のような形式で入力してね'
     return
   }
 
   try {
-    // まず既存セッションからプロファイルをロードする API を呼ぶ
-    const resp = await apiFetch<{ profile_id: string; status: string }>(
-      `/v1/evolution/profiles/${profileId.value}/prompt`
-    )
-    // プロンプト取得成功 = 既にロード済み
-    loadStatus.value = `プロファイル ${resp.profile_id} は既にロード済みです`
+    await apiFetch<{ profile_id: string }>(`/v1/evolution/profiles/${profileId.value}/prompt`)
+    loadStatus.value = '✨ プロファイル読み込み完了！'
     profileLoaded.value = true
     await listAgents(profileId.value)
   } catch (e: any) {
     if (e.status === 404) {
-      loadError.value = 'このプロファイルはまだシステムにロードされていません。Swagger UI (http://localhost:8001/docs) から POST /profiles でロードしてください。'
+      loadError.value = 'このプロファイルはまだ登録されていないみたい。質問フローを完了してからもう一度試してね！'
     } else {
       loadError.value = e.message
     }
@@ -78,7 +77,7 @@ async function handleCreateAgent() {
   const agent = await createAgent(profileId.value, newAgentName.value.trim())
   if (agent) {
     newAgentName.value = ''
-    loadStatus.value = `エージェント「${agent.display_name}」を作成しました`
+    loadStatus.value = `🎉 「${agent.display_name}」が誕生したよ！`
   }
 }
 
@@ -99,7 +98,6 @@ function handleStartDiscussion(agentIds: string[], theme: string) {
 }
 
 onMounted(() => {
-  // profile_id がクエリパラメータにあれば自動設定
   const params = new URLSearchParams(window.location.search)
   const pid = params.get('profile_id')
   if (pid) {
@@ -110,114 +108,147 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="evolution-view">
-    <header class="evolution-header">
-      <h1>Agent Evolution</h1>
-      <p class="subtitle">分身エージェントの対話・管理</p>
+  <div class="evo">
+    <!-- ヘッダー -->
+    <header class="evo-header">
+      <div class="evo-header__icon">🏠</div>
+      <div>
+        <h1 class="evo-header__title">わたしの分身たち</h1>
+        <p class="evo-header__sub">みんなの様子を覗いてみよう</p>
+      </div>
     </header>
 
-    <!-- タブ切り替え -->
-    <nav class="tabs" role="tablist">
+    <!-- タブナビゲーション -->
+    <nav class="evo-tabs">
       <button
-        v-for="tab in (['setup', 'chat', 'discussion'] as Tab[])"
-        :key="tab"
-        role="tab"
-        :aria-selected="activeTab === tab"
-        :class="['tab', { active: activeTab === tab }]"
-        @click="activeTab = tab"
+        v-for="tab in ([
+          { id: 'setup' as Tab, icon: '🏡', label: 'おへや' },
+          { id: 'chat' as Tab, icon: '💬', label: 'おしゃべり' },
+          { id: 'discussion' as Tab, icon: '🎪', label: 'みんなで会議' },
+        ])"
+        :key="tab.id"
+        :class="['evo-tab', { 'evo-tab--active': activeTab === tab.id }]"
+        @click="activeTab = tab.id"
       >
-        {{ tab === 'setup' ? '⚙️ 設定' : tab === 'chat' ? '💬 チャット' : '🎭 ディスカッション' }}
+        <span class="evo-tab__icon">{{ tab.icon }}</span>
+        <span class="evo-tab__label">{{ tab.label }}</span>
       </button>
     </nav>
 
-    <!-- 設定タブ -->
-    <section v-if="activeTab === 'setup'" class="tab-content">
-      <div class="setup-section">
-        <h2>プロファイルロード</h2>
-        <div class="input-row">
+    <!-- 設定タブ（おへや） -->
+    <section v-if="activeTab === 'setup'" class="evo-panel">
+      <div class="evo-card">
+        <h2 class="evo-card__title">📋 プロファイル読み込み</h2>
+        <div class="evo-input-group">
           <input
             v-model="profileId"
             type="text"
             placeholder="prof_000001"
-            class="text-input"
+            class="evo-input"
           />
-          <button class="btn-primary" @click="handleLoadProfile">確認</button>
+          <button class="evo-btn evo-btn--primary" @click="handleLoadProfile">読み込む</button>
         </div>
-        <p v-if="loadStatus" class="status-msg success">{{ loadStatus }}</p>
-        <p v-if="loadError" class="status-msg error">{{ loadError }}</p>
+        <p v-if="loadStatus" class="evo-msg evo-msg--ok">{{ loadStatus }}</p>
+        <p v-if="loadError" class="evo-msg evo-msg--err">{{ loadError }}</p>
       </div>
 
-      <div v-if="profileLoaded" class="setup-section">
-        <h2>エージェント作成</h2>
-        <div class="input-row">
+      <div v-if="profileLoaded" class="evo-card">
+        <h2 class="evo-card__title">🐣 新しい分身をつくる</h2>
+        <div class="evo-input-group">
           <input
             v-model="newAgentName"
             type="text"
-            placeholder="表示名を入力..."
-            class="text-input"
+            placeholder="なまえを入力..."
+            class="evo-input"
           />
           <button
-            class="btn-primary"
+            class="evo-btn evo-btn--accent"
             :disabled="!newAgentName.trim()"
             @click="handleCreateAgent"
           >
-            作成
+            うまれる！
           </button>
         </div>
       </div>
 
-      <div v-if="agents.length > 0" class="setup-section">
-        <h2>登録済みエージェント</h2>
-        <AgentList :profile-id="profileId" @select="handleSelectAgent" />
+      <!-- 分身一覧 -->
+      <div v-if="agents.length > 0" class="evo-card">
+        <h2 class="evo-card__title">🏠 住んでいる分身たち</h2>
+        <div class="evo-residents">
+          <button
+            v-for="(agent, idx) in agents"
+            :key="agent.agent_id"
+            class="evo-resident"
+            @click="handleSelectAgent(agent)"
+          >
+            <span class="evo-resident__avatar">{{ getAvatar(idx) }}</span>
+            <span class="evo-resident__name">{{ agent.display_name }}</span>
+          </button>
+        </div>
       </div>
     </section>
 
-    <!-- チャットタブ -->
-    <section v-if="activeTab === 'chat'" class="tab-content chat-layout">
-      <aside class="chat-sidebar">
-        <AgentList
-          v-if="profileId"
-          :profile-id="profileId"
-          @select="handleSelectAgent"
-        />
-        <p v-else class="hint">設定タブでプロファイルをロードしてください</p>
+    <!-- チャットタブ（おしゃべり） -->
+    <section v-if="activeTab === 'chat'" class="evo-panel evo-panel--chat">
+      <aside class="evo-sidebar">
+        <h3 class="evo-sidebar__title">だれと話す？</h3>
+        <div class="evo-residents evo-residents--compact">
+          <button
+            v-for="(agent, idx) in agents"
+            :key="agent.agent_id"
+            :class="['evo-resident evo-resident--sm', { 'evo-resident--selected': selectedAgent?.agent_id === agent.agent_id }]"
+            @click="handleSelectAgent(agent)"
+          >
+            <span class="evo-resident__avatar">{{ getAvatar(idx) }}</span>
+            <span class="evo-resident__name">{{ agent.display_name }}</span>
+          </button>
+        </div>
+        <p v-if="agents.length === 0" class="evo-hint">
+          おへやタブで分身を作ってね
+        </p>
       </aside>
-      <main class="chat-main">
+      <main class="evo-chat-main">
         <template v-if="selectedAgent">
-          <div class="chat-header">
-            <span class="agent-name">{{ selectedAgent.display_name }}</span>
-            <span v-if="threadId" class="thread-id">Thread: {{ threadId.slice(0, 8) }}...</span>
+          <div class="evo-chat-header">
+            <span class="evo-chat-header__avatar">{{ getAvatar(agents.findIndex(a => a.agent_id === selectedAgent!.agent_id)) }}</span>
+            <span class="evo-chat-header__name">{{ selectedAgent.display_name }}</span>
+            <span class="evo-chat-header__status">おしゃべり中</span>
           </div>
           <ChatThread :messages="messages" :streaming="streaming" />
           <ChatInput :disabled="chatLoading || streaming" @send="handleSendMessage" />
         </template>
-        <div v-else class="empty-state">
-          <p>左のリストからエージェントを選択してください</p>
+        <div v-else class="evo-empty">
+          <p>← だれかをえらんでね</p>
         </div>
       </main>
     </section>
 
-    <!-- ディスカッションタブ -->
-    <section v-if="activeTab === 'discussion'" class="tab-content">
+    <!-- ディスカッションタブ（みんなで会議） -->
+    <section v-if="activeTab === 'discussion'" class="evo-panel">
       <template v-if="!discussionId && !discStreaming">
-        <DiscussionSetup :agents="agents" @start="handleStartDiscussion" />
-        <p v-if="agents.length < 2" class="hint">
-          ディスカッションには2体以上のエージェントが必要です。設定タブでエージェントを作成してください。
-        </p>
+        <div class="evo-card">
+          <h2 class="evo-card__title">🎪 みんなで会議をひらく</h2>
+          <DiscussionSetup :agents="agents" @start="handleStartDiscussion" />
+          <p v-if="agents.length < 2" class="evo-hint">
+            会議には2人以上の分身が必要だよ。おへやで仲間を増やしてね！
+          </p>
+        </div>
       </template>
       <template v-else>
-        <DiscussionTheater
-          :turns="turns"
-          :streaming="discStreaming"
-          :progress="progress"
-          :total-expected-turns="totalExpectedTurns"
-        />
+        <div class="evo-card evo-card--theater">
+          <DiscussionTheater
+            :turns="turns"
+            :streaming="discStreaming"
+            :progress="progress"
+            :total-expected-turns="totalExpectedTurns"
+          />
+        </div>
         <button
           v-if="!discStreaming"
-          class="btn-secondary"
+          class="evo-btn evo-btn--secondary"
           @click="resetDiscussion"
         >
-          新しいディスカッションを開始
+          🔄 もういっかい！
         </button>
       </template>
     </section>
@@ -225,99 +256,215 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.evolution-view {
-  max-width: 1100px;
+/* === トモコレ風テーマ: パステル＆まるっとしたUI === */
+
+.evo {
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 1.5rem 1rem;
+  padding: 1rem;
+  font-family: 'Hiragino Maru Gothic ProN', 'Kosugi Maru', system-ui, sans-serif;
+  background: linear-gradient(180deg, #fef9ff 0%, #f0f7ff 50%, #f5fff0 100%);
+  min-height: 100vh;
 }
 
-.evolution-header {
-  text-align: center;
-  margin-bottom: 1.5rem;
+/* --- ヘッダー --- */
+.evo-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 0;
+  margin-bottom: 0.5rem;
 }
-.evolution-header h1 {
-  font-size: 1.75rem;
+.evo-header__icon { font-size: 2rem; }
+.evo-header__title {
+  font-size: 1.5rem;
   font-weight: 700;
-  color: #1f2937;
+  color: #5b4a8a;
   margin: 0;
 }
-.subtitle {
-  color: #6b7280;
-  font-size: 0.875rem;
-  margin: 0.25rem 0 0;
+.evo-header__sub {
+  font-size: 0.8rem;
+  color: #9b8ec4;
+  margin: 0;
 }
 
-/* Tabs */
-.tabs {
+/* --- タブ --- */
+.evo-tabs {
   display: flex;
-  gap: 0;
-  border-bottom: 2px solid #e5e7eb;
-  margin-bottom: 1.5rem;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
-.tab {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  background: none;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  color: #6b7280;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: all 0.2s;
-}
-.tab.active {
-  color: #4f46e5;
-  border-bottom-color: #4f46e5;
-}
-.tab:hover:not(.active) { color: #374151; }
-
-/* Tab content */
-.tab-content { min-height: 400px; }
-
-/* Setup */
-.setup-section { margin-bottom: 2rem; }
-.setup-section h2 { font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem; }
-.input-row { display: flex; gap: 0.5rem; }
-.text-input {
+.evo-tab {
   flex: 1;
-  padding: 0.625rem 0.875rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  font-size: 0.9375rem;
-}
-.btn-primary {
-  padding: 0.625rem 1.25rem;
-  background: #4f46e5;
-  color: white;
-  border: none;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  cursor: pointer;
-}
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-secondary {
-  margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.75rem 0.5rem;
+  border: 2px solid #e8dff5;
+  border-radius: 16px;
   background: white;
   cursor: pointer;
+  transition: all 0.2s;
 }
-.status-msg { font-size: 0.875rem; margin-top: 0.5rem; }
-.status-msg.success { color: #059669; }
-.status-msg.error { color: #dc2626; }
-.hint { color: #9ca3af; font-size: 0.875rem; font-style: italic; }
+.evo-tab:hover { background: #faf5ff; border-color: #d4c4ed; }
+.evo-tab--active {
+  background: linear-gradient(135deg, #e8dff5, #d4eaff);
+  border-color: #b4a0d9;
+  box-shadow: 0 2px 8px rgba(139, 115, 200, 0.15);
+}
+.evo-tab__icon { font-size: 1.5rem; }
+.evo-tab__label { font-size: 0.75rem; font-weight: 600; color: #5b4a8a; }
 
-/* Chat layout */
-.chat-layout { display: flex; gap: 1rem; height: 600px; }
-.chat-sidebar { width: 220px; flex-shrink: 0; overflow-y: auto; border-right: 1px solid #e5e7eb; padding-right: 1rem; }
-.chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.chat-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 0.5rem;
+/* --- パネル --- */
+.evo-panel { min-height: 400px; }
+.evo-panel--chat { display: flex; gap: 0.75rem; height: 550px; }
+
+/* --- カード --- */
+.evo-card {
+  background: white;
+  border: 2px solid #ede7f6;
+  border-radius: 20px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 12px rgba(139, 115, 200, 0.06);
 }
-.agent-name { font-weight: 600; font-size: 1rem; }
-.thread-id { font-size: 0.75rem; color: #9ca3af; }
-.empty-state { display: flex; align-items: center; justify-content: center; flex: 1; color: #9ca3af; }
+.evo-card--theater { padding: 0.75rem; }
+.evo-card__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #5b4a8a;
+  margin: 0 0 0.75rem;
+}
+
+/* --- インプット --- */
+.evo-input-group { display: flex; gap: 0.5rem; }
+.evo-input {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border: 2px solid #e8dff5;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  background: #faf8ff;
+  transition: border-color 0.2s;
+}
+.evo-input:focus { border-color: #b4a0d9; outline: none; background: white; }
+
+/* --- ボタン --- */
+.evo-btn {
+  padding: 0.6rem 1.25rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.evo-btn--primary { background: #7c5cbf; color: white; }
+.evo-btn--primary:hover { background: #6a4bad; }
+.evo-btn--accent { background: #ff8fab; color: white; }
+.evo-btn--accent:hover { background: #f57c9e; }
+.evo-btn--accent:disabled { background: #f0c4d4; cursor: not-allowed; }
+.evo-btn--secondary {
+  background: white;
+  border: 2px solid #e8dff5;
+  color: #5b4a8a;
+  margin-top: 0.75rem;
+}
+.evo-btn--secondary:hover { background: #faf5ff; }
+
+/* --- メッセージ --- */
+.evo-msg { font-size: 0.8rem; margin-top: 0.5rem; border-radius: 8px; padding: 0.4rem 0.75rem; }
+.evo-msg--ok { background: #e8f8e8; color: #2d7a3a; }
+.evo-msg--err { background: #fff0f0; color: #c53030; }
+.evo-hint { font-size: 0.8rem; color: #9b8ec4; font-style: italic; margin-top: 0.5rem; }
+
+/* --- 分身カード（レジデンツ） --- */
+.evo-residents {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.75rem;
+}
+.evo-residents--compact {
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+.evo-resident {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 1rem 0.5rem;
+  background: linear-gradient(135deg, #fef5ff, #f5f0ff);
+  border: 2px solid #ede7f6;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.evo-resident:hover {
+  border-color: #b4a0d9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 115, 200, 0.15);
+}
+.evo-resident--sm {
+  flex-direction: row;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+}
+.evo-resident--selected {
+  background: linear-gradient(135deg, #e4d4f7, #d4e8ff);
+  border-color: #8b73c8;
+}
+.evo-resident__avatar { font-size: 1.75rem; }
+.evo-resident--sm .evo-resident__avatar { font-size: 1.25rem; }
+.evo-resident__name { font-size: 0.8rem; font-weight: 600; color: #5b4a8a; }
+
+/* --- サイドバー --- */
+.evo-sidebar {
+  width: 180px;
+  flex-shrink: 0;
+  padding-right: 0.5rem;
+  border-right: 2px solid #ede7f6;
+  overflow-y: auto;
+}
+.evo-sidebar__title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #9b8ec4;
+  margin: 0 0 0.5rem;
+}
+
+/* --- チャットメイン --- */
+.evo-chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: white;
+  border: 2px solid #ede7f6;
+  border-radius: 20px;
+  overflow: hidden;
+}
+.evo-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #f8f0ff, #f0f5ff);
+  border-bottom: 2px solid #ede7f6;
+}
+.evo-chat-header__avatar { font-size: 1.5rem; }
+.evo-chat-header__name { font-weight: 700; color: #5b4a8a; font-size: 0.9rem; }
+.evo-chat-header__status { font-size: 0.7rem; color: #4ade80; margin-left: auto; }
+
+/* --- 空状態 --- */
+.evo-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: #b4a0d9;
+  font-size: 1rem;
+}
 </style>
