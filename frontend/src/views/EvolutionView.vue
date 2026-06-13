@@ -139,8 +139,14 @@ onMounted(async () => {
       <!-- エージェントリスト -->
       <div v-if="agentsLoading" class="ev-loading">読み込み中...</div>
       <div v-else-if="!hasAgents" class="ev-empty-state">
+        <div class="ev-empty-state__icon">🤖</div>
         <p class="ev-empty-state__text">まだエージェントがいません</p>
-        <p class="ev-empty-state__sub">上のフォームから作成するか、質問フロー（/survey）を完了してください</p>
+        <p class="ev-empty-state__sub">質問フローを完了してプロファイルを作成し、分身エージェントを生成しましょう</p>
+        <div class="ev-empty-state__actions">
+          <router-link to="/survey" class="ev-btn ev-btn--primary">
+            質問フローを始める
+          </router-link>
+        </div>
       </div>
       <div v-else class="ev-agent-grid">
         <div
@@ -241,7 +247,7 @@ onMounted(async () => {
 .ev {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 1.5rem 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   color: #1a1a2e;
 }
@@ -392,9 +398,12 @@ onMounted(async () => {
 
 /* --- Empty / Loading --- */
 .ev-loading { padding: 2rem; text-align: center; color: #94a3b8; }
-.ev-empty-state { padding: 3rem; text-align: center; }
-.ev-empty-state__text { font-size: 1rem; color: #475569; margin: 0; }
-.ev-empty-state__sub { font-size: 0.8rem; color: #94a3b8; margin-top: 0.5rem; }
+.ev-empty-state { padding: 4rem 2rem; text-align: center; }
+.ev-empty-state__icon { font-size: 3rem; margin-bottom: 1rem; }
+.ev-empty-state__text { font-size: 1.125rem; font-weight: 600; color: #374151; margin: 0; }
+.ev-empty-state__sub { font-size: 0.875rem; color: #94a3b8; margin: 0.5rem 0 0; max-width: 400px; margin-left: auto; margin-right: auto; line-height: 1.5; }
+.ev-empty-state__actions { margin-top: 1.5rem; }
+.ev-empty-state__actions .ev-btn { display: inline-block; text-decoration: none; }
 .ev-hint { font-size: 0.8rem; color: #94a3b8; margin-top: 0.75rem; }
 
 /* --- Chat sidebar --- */
