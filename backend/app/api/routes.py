@@ -303,6 +303,19 @@ async def calculate_profile(
     profile_id=profile.profile_id,
   )
 
+  # Evolution システムにプロファイルを自動ロード（サービス初期化済みの場合のみ）
+  try:
+    from app.evolution.dependencies import get_service
+    clm = get_service("context_layer_manager")
+    agent_mgr = get_service("agent_manager")
+    if clm is not None and agent_mgr is not None:
+      await clm.load_profile(profile)
+      await agent_mgr.save_profile(profile.profile_id, profile.model_dump_json())
+      logger.info("Profile %s auto-loaded into Evolution", profile.profile_id)
+  except Exception as e:
+    # Evolution ロード失敗はプロファイル生成自体には影響させない
+    logger.warning("Failed to auto-load profile into Evolution: %s", e)
+
   return CalculateResponse(profile_id=profile.profile_id)
 
 

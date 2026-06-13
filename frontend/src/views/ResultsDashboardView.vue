@@ -153,6 +153,19 @@ async function copyToClipboard(): Promise<void> {
         </div>
       </section>
 
+      <!-- Evolution 連携 -->
+      <section class="results-dashboard__evolution">
+        <router-link
+          :to="`/evolution?profile_id=${profile.profile_id}`"
+          class="results-dashboard__evolution-button"
+        >
+          🤖 分身を作成する →
+        </router-link>
+        <p class="results-dashboard__evolution-note">
+          プロファイルを使って AI 分身を作成し、チャットやディスカッションを楽しめます
+        </p>
+      </section>
+
       <!-- JSON プレビュー -->
       <section class="results-dashboard__json">
         <div class="results-dashboard__json-header">
@@ -311,6 +324,32 @@ async function copyToClipboard(): Promise<void> {
   border-radius: 9999px;
   font-size: 0.8125rem;
   font-weight: 500;
+}
+
+/* --- Evolution 連携 --- */
+.results-dashboard__evolution {
+  margin-bottom: 2rem;
+  text-align: center;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  border-radius: 12px;
+}
+.results-dashboard__evolution-button {
+  display: inline-block;
+  padding: 0.75rem 2rem;
+  background: #4f46e5;
+  color: white;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.0625rem;
+  transition: background 0.2s;
+}
+.results-dashboard__evolution-button:hover { background: #4338ca; }
+.results-dashboard__evolution-note {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
 }
 
 /* --- JSON Preview --- */
