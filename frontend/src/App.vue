@@ -22,7 +22,7 @@ const themeLabel = computed(() => {
 const navLinks = [
   { to: '/survey', label: '診断' },
   { to: '/results', label: '結果' },
-  { to: '/evolution', label: 'Evolution' },
+  { to: '/evolution', label: '分身と遊ぶ' },
 ] as const
 </script>
 

@@ -1,68 +1,111 @@
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue'
+
+// --- マウス追従パーティクル ---
+const mouseX = ref(50)
+const mouseY = ref(50)
+
+function handleMouse(e: MouseEvent) {
+  mouseX.value = (e.clientX / window.innerWidth) * 100
+  mouseY.value = (e.clientY / window.innerHeight) * 100
+}
+
+onMounted(() => {
+  window.addEventListener('mousemove', handleMouse)
+})
+onUnmounted(() => {
+  window.removeEventListener('mousemove', handleMouse)
+})
 </script>
 
 <template>
-  <div class="relative min-h-[calc(100vh-52px)] flex flex-col items-center justify-center overflow-hidden px-6">
-    <!-- Ambient orbs -->
-    <div class="absolute inset-0 -z-10 pointer-events-none">
-      <div class="absolute top-[10%] left-[20%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-primary/15 to-transparent blur-[150px] animate-float" />
-      <div class="absolute bottom-[5%] right-[15%] w-[350px] h-[350px] rounded-full bg-gradient-to-tl from-cyan-500/10 to-transparent blur-[120px]" style="animation-delay: -2s" />
-      <div class="absolute top-[50%] left-[60%] w-[200px] h-[200px] rounded-full bg-gradient-to-r from-pink-500/8 to-transparent blur-[80px]" style="animation-delay: -4s" />
+  <div class="relative min-h-[calc(100vh-52px)] overflow-hidden select-none">
+    <!-- マウス追従グロウ -->
+    <div
+      class="fixed w-[600px] h-[600px] rounded-full pointer-events-none -z-10 transition-all duration-[2000ms] ease-out"
+      :style="{
+        left: mouseX + '%',
+        top: mouseY + '%',
+        transform: 'translate(-50%, -50%)',
+        background: 'radial-gradient(circle, rgba(109,40,217,0.08) 0%, transparent 70%)',
+      }"
+    />
+
+    <!-- 固定アンビエント -->
+    <div class="absolute inset-0 -z-20 pointer-events-none overflow-hidden">
+      <div class="absolute top-[-30%] right-[-10%] w-[800px] h-[800px] rounded-full bg-gradient-to-bl from-primary/6 to-transparent blur-[200px] animate-float" />
+      <div class="absolute bottom-[-20%] left-[-5%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-cyan-500/5 to-transparent blur-[150px]" style="animation-delay: -4s" />
     </div>
 
-    <!-- Hero -->
-    <div class="text-center max-w-2xl mx-auto">
-      <!-- Badge -->
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full glass text-[10px] font-medium tracking-widest uppercase text-[var(--color-muted-foreground)] mb-8">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        AI-Powered Agent Creation
-      </div>
+    <!-- Hero セクション -->
+    <section class="flex flex-col items-center justify-center min-h-[85vh] px-6 text-center">
+      <!-- タイピングアニメーション風ヘッドライン -->
+      <p class="text-[11px] tracking-[0.3em] uppercase text-[var(--color-muted-foreground)] mb-10 font-mono">
+        think → profile → clone → evolve
+      </p>
 
-      <!-- Headline -->
-      <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
-        <span class="gradient-text">あなたの分身</span>を<br />
-        つくる。動かす。観察する。
+      <h1 class="text-[clamp(2.5rem,7vw,5rem)] font-black leading-[1.05] tracking-[-0.04em] max-w-4xl">
+        <span class="block">あなたの中の</span>
+        <span class="block gradient-text">もうひとりの自分</span>
+        <span class="block text-[0.6em] font-light tracking-normal text-[var(--color-muted-foreground)] mt-4">
+          に、会いにいこう。
+        </span>
       </h1>
 
-      <!-- Sub -->
-      <p class="text-base sm:text-lg text-[var(--color-muted-foreground)] max-w-lg mx-auto leading-relaxed mb-10">
-        47の質問であなたの思考特性を解析し、パーソナライズされたAIエージェントを生成。分身同士の対話から、新たな自分を発見する。
+      <p class="text-sm sm:text-base text-[var(--color-muted-foreground)] max-w-md mx-auto mt-8 leading-[1.8]">
+        質問に答えるだけで、あなたの思考回路を持つAIが生まれる。<br />
+        そいつと話す。そいつ同士を話させる。<br />
+        <strong class="text-[var(--color-foreground)]">自分を客観視する、まったく新しい体験。</strong>
       </p>
 
       <!-- CTA -->
-      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+      <div class="mt-12 flex flex-col sm:flex-row gap-4">
         <router-link
           to="/survey"
-          class="inline-flex items-center justify-center px-8 py-3.5 rounded-xl bg-gradient-to-r from-primary to-[#a78bfa] text-white text-sm font-semibold tracking-wide glow hover:scale-[1.02] transition-transform"
+          class="group relative inline-flex items-center justify-center px-10 py-4 rounded-2xl bg-gradient-to-r from-primary via-[#a78bfa] to-[#06b6d4] text-white text-sm font-bold tracking-wide overflow-hidden glow hover:scale-[1.03] transition-transform"
         >
-          診断を始める →
+          <span class="relative z-10">自分を解析する</span>
+          <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
         </router-link>
         <router-link
           to="/evolution"
-          class="inline-flex items-center justify-center px-8 py-3.5 rounded-xl glass text-sm font-medium text-[var(--color-foreground)] hover:glow-sm transition-all"
+          class="inline-flex items-center justify-center px-8 py-4 rounded-2xl glass text-sm font-medium text-[var(--color-foreground)] hover:glow-sm transition-all"
         >
-          Evolution を見る
+          分身たちの世界を覗く
         </router-link>
       </div>
-    </div>
+    </section>
 
-    <!-- Features -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-20 w-full max-w-3xl">
-      <div class="glass rounded-2xl p-5 text-center">
-        <div class="text-2xl mb-2">◆</div>
-        <h3 class="text-sm font-semibold mb-1">思考特性の可視化</h3>
-        <p class="text-[11px] text-[var(--color-muted-foreground)] leading-relaxed">独自の4軸モデルであなたの意思決定パターンを数値化</p>
+    <!-- What happens セクション -->
+    <section class="px-6 pb-24">
+      <div class="max-w-3xl mx-auto">
+        <h2 class="text-center text-xs tracking-[0.25em] uppercase text-[var(--color-muted-foreground)] mb-12 font-mono">
+          what happens here
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="glass rounded-2xl p-6 hover:glow transition-all duration-500 group">
+            <div class="text-3xl mb-4 group-hover:scale-110 transition-transform">🧠</div>
+            <h3 class="text-sm font-bold mb-2">思考をスキャン</h3>
+            <p class="text-[11px] text-[var(--color-muted-foreground)] leading-relaxed">
+              47問の質問があなたの意思決定パターン・価値観・こだわりを4軸で数値化する。所要15分。
+            </p>
+          </div>
+          <div class="glass rounded-2xl p-6 hover:glow transition-all duration-500 group">
+            <div class="text-3xl mb-4 group-hover:scale-110 transition-transform">⚡</div>
+            <h3 class="text-sm font-bold mb-2">分身が生まれる</h3>
+            <p class="text-[11px] text-[var(--color-muted-foreground)] leading-relaxed">
+              プロファイルからAIエージェントを生成。あなたの口調・判断軸・禁止事項を内蔵した分身。
+            </p>
+          </div>
+          <div class="glass rounded-2xl p-6 hover:glow transition-all duration-500 group">
+            <div class="text-3xl mb-4 group-hover:scale-110 transition-transform">🎭</div>
+            <h3 class="text-sm font-bold mb-2">分身同士が議論する</h3>
+            <p class="text-[11px] text-[var(--color-muted-foreground)] leading-relaxed">
+              複数の分身にテーマを投げると、勝手に議論が始まる。自分の中の多面性を目撃する体験。
+            </p>
+          </div>
+        </div>
       </div>
-      <div class="glass rounded-2xl p-5 text-center">
-        <div class="text-2xl mb-2">◇</div>
-        <h3 class="text-sm font-semibold mb-1">分身エージェント生成</h3>
-        <p class="text-[11px] text-[var(--color-muted-foreground)] leading-relaxed">プロファイルからAI分身を生成し、チャットや議論が可能</p>
-      </div>
-      <div class="glass rounded-2xl p-5 text-center">
-        <div class="text-2xl mb-2">△</div>
-        <h3 class="text-sm font-semibold mb-1">マルチエージェント対話</h3>
-        <p class="text-[11px] text-[var(--color-muted-foreground)] leading-relaxed">複数の分身がテーマについて自律議論。新たな視点を発見</p>
-      </div>
-    </div>
+    </section>
   </div>
 </template>

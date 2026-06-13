@@ -1,53 +1,55 @@
 # Agent Profiler
 
-**仮想自分AIエージェントを生成するプロファイリングシステム**
+**あなたの中の「もうひとりの自分」に会いにいく。**
 
-質問に答えるだけで、あなたの思考特性・価値観・口調・興味関心を構造化データ（JSON）として出力し、AIエージェントの「ベースOS」として機能するプロファイルを生成します。生成されたプロファイルを使って「AI自分」を構築し、他のAIエージェントと対話させたり、代理で情報収集させたりすることを最終目標としています。
-
----
-
-## コンセプト
-
-```
-あなた → 質問に回答 → プロファイルJSON生成 → AIエージェントにロード → 「AI自分」が活動
-```
-
-- **ステップベース質問UI**: 1問ずつカードフリップ形式で回答
-- **4軸思考特性分析**: 独自の4軸モデルで思考傾向をスコアリング
-- **LLM連携**: 自由記述回答をOpenAI APIで分析し、スコアリングに反映
-- **3層コンテキストアーキテクチャ**: 常駐/オンデマンド/動的検索の階層でデータを管理
+質問に答えるだけで、あなたの思考回路・価値観・意思決定パターンを持つ AI エージェント（分身）を生成。分身と対話し、分身同士を議論させ、自分を客観視する——そんな体験を提供するプロファイリング × AI エージェントプラットフォームです。
 
 ---
 
-## 出力JSON構造
+## できること
 
-```json
-{
-  "profile_id": "prof_000001",
-  "persona": {
-    "nickname": "...",
-    "age_range": "30代",
-    "role": "テックリード",
-    "industry": "IT/SaaS",
-    "experience_years": "10年以上"
-  },
-  "communication_tone": {
-    "pronoun": "私",
-    "formality": "adaptive",
-    "text_style": "concise_structured",
-    "emotion_level": "neutral",
-    "humor": "light_joke",
-    "response_length": "medium"
-  },
-  "base_os": {
-    "axes": { ... },
-    "decision_style": "覇道の戦略家",
-    "do_not_list": [...]
-  },
-  "lexical_tags": [...],
-  "semantic_contexts": { ... },
-  "context_layers": { ... }
-}
+| 機能 | 概要 |
+|------|------|
+| 🧠 思考特性プロファイリング | 47問の質問（4択 + 自由記述）で4軸思考特性を数値化。LLM による自由記述スコアリング付き |
+| ⚡ AI分身の生成 | プロファイルから複数の分身エージェントを生成。1つのプロファイルから何体でも作成可能 |
+| 💬 1対1チャット | 分身との対話。SSE ストリーミングでリアルタイム応答 |
+| 🎭 マルチエージェント議論 | 2〜6体の分身にテーマを投げると自律的にターン制議論を開始 |
+| 📊 相性診断 & レコメンド | 4軸パラメータの Cosine Similarity / 相補性スコアで分身間の相性を可視化 |
+| 📦 Agent Pack Zip | IDE（VSCode / GitHub Copilot / Claude Code）配置用の構成資産を自動生成 & ダウンロード |
+| 🔍 ハイブリッド検索 | Lexical（キーワード完全一致）+ Semantic（ベクトル検索）の重み付き統合 |
+| ⚙️ セマンティックキャッシュ | 類似発話を検知して LLM コストを自動削減 |
+| 🔀 ハイブリッドルーティング | 軽量クエリ → ローカル SLM / 複雑クエリ → Cloud LLM に自動振り分け |
+| 🌐 MCP Server | Model Context Protocol で分身のコンテキストを外部公開 |
+
+---
+
+## アーキテクチャ
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Frontend (Vue 3 + Tailwind CSS v4 + TypeScript)        │
+│  ├─ / ランディング                                      │
+│  ├─ /survey 質問フロー                                  │
+│  ├─ /results 結果ダッシュボード                          │
+│  └─ /evolution 分身管理・チャット・ディスカッション       │
+├─────────────────────────────────────────────────────────┤
+│  Backend (FastAPI + Python 3.12+)                       │
+│  ├─ /api/sessions/* プロファイリング API                 │
+│  └─ /api/v1/evolution/* Agent Evolution API             │
+│     ├─ 3層コンテキスト管理 (Base OS / Skills / MCP)     │
+│     ├─ ハイブリッド検索 + セマンティックキャッシュ        │
+│     ├─ ルーティングエンジン (SLM / Cloud LLM)           │
+│     ├─ Agent Manager (CRUD + DB 永続化)                 │
+│     ├─ Chat Service (スレッド + SSE)                    │
+│     ├─ Discussion Engine (ターン制議論)                  │
+│     ├─ Compatibility Engine (相性診断)                   │
+│     ├─ Package Generator (Zip 生成)                     │
+│     └─ Export Service (JSON / Markdown)                  │
+├─────────────────────────────────────────────────────────┤
+│  Data                                                   │
+│  ├─ SQLite (sessions.db / evolution.db / cache.db)      │
+│  └─ MCP Server (stdio / SSE)                           │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -56,130 +58,94 @@
 
 | レイヤー | 技術 |
 |---------|------|
-| フロントエンド | Vue 3 + TypeScript + Vite + Pinia |
+| フロントエンド | Vue 3.5 + TypeScript + Vite 6 + Tailwind CSS v4 + Pinia |
 | バックエンド | FastAPI + Python 3.12+ + Pydantic v2 |
-| DB | SQLite (aiosqlite) |
-| LLM連携 | OpenAI API (gpt-4.1-mini) + ollama (SLM ルーティング) |
-| 検索 | numpy (cosine similarity) + hash index (lexical) |
-| キャッシュ | SQLite セマンティックキャッシュ (埋め込みベクトル) |
-| テスト | pytest + Hypothesis (PBT) / Vitest + Vue Test Utils |
+| DB | SQLite (aiosqlite) — プロファイル / エージェント / チャット / キャッシュ |
+| LLM | OpenAI API (gpt-4.1-mini) + ollama (SLM ルーティング) |
+| 検索 | numpy cosine similarity + hash index |
 | プロトコル | MCP (Model Context Protocol) stdio/SSE |
+| テスト | pytest + Hypothesis (PBT: 36 プロパティ) / Vitest |
 
 ---
 
-## 起動方法
-
-### バックエンド
+## クイックスタート
 
 ```bash
+# バックエンド
 cd backend
-cp .env.example .env  # APIキーを設定
+cp .env.example .env          # OPENAI_API_KEY + EVOLUTION_CLOUD_LLM_API_KEY を設定
 uv sync --all-extras
 uv run uvicorn app.main:app --port 8001
-```
 
-### フロントエンド
-
-```bash
+# フロントエンド
 cd frontend
 npm install
 npm run dev
 ```
 
-アクセス: http://localhost:5173/
+http://localhost:5173/ にアクセス。
 
----
-
-## 質問カテゴリ
-
-| 順序 | カテゴリ | 質問タイプ | 問数 | 目的 |
-|------|---------|-----------|------|------|
-| 1 | Persona | 選択式 + Other | 5問 | 基本属性（年代、職種等） |
-| 2 | Communication Tone | 選択式 | 5問 | 口調・表現スタイル |
-| 3 | Interests & Preferences | チェックボックス（20択 + 自由入力4欄）×5問 | 5問 | 興味・スキル・好み |
-| 4 | Business OS | 4択 + Other | 9問 | 思考特性スコアリング |
-| 5 | Communication | 4択 + Other | 9問 | 思考特性スコアリング |
-| 6 | Lifestyle/Hobbies | 4択 + Other | 9問 | 思考特性スコアリング |
-
----
-
-## Agent Evolution（ランタイムシステム）
-
-プロファイル生成後の「AI自分」を実際に動かすランタイム機能群です。`/api/v1/evolution/` 以下で REST API を提供します。
-
-### できること
-
-| 機能 | 概要 |
-|------|------|
-| 3層コンテキスト管理 | Base OS (常駐) / Agent Skills (オンデマンド) / MCP (動的検索) を統合 |
-| ハイブリッド検索 | Lexical 完全一致 + Semantic ベクトル検索の重み付き統合 |
-| セマンティックキャッシュ | 類似発話を SQLite + cosine similarity で検知し LLM コスト削減 |
-| ハイブリッドルーティング | 軽量発話→ローカル SLM (ollama) / 複雑発話→Cloud LLM に自動振り分け |
-| 分身エージェント管理 | 1プロファイルから複数 AI ペルソナ（分身）を作成・管理 |
-| 1対1チャット | SSE ストリーミング対応の会話 API (スレッド管理付き) |
-| マルチエージェント議論 | 2〜6 体の分身がターン制で自律議論 (トモコレ的シアター体験) |
-| 相性診断 + レコメンド | 4軸 Cosine Similarity / Complementarity による分身間マッチング |
-| Agent Pack Zip 生成 | プロファイルから IDE 配置可能な構成資産を自動ビルド & ダウンロード |
-| 会話ログエクスポート | チャット・議論ログを JSON / Markdown で出力 |
-| MCP Server | semantic_contexts を Model Context Protocol で外部公開 |
-
-### Evolution 環境変数
+### 環境変数
 
 ```bash
-# 必須（未設定時は Evolution 機能が無効化される）
-EVOLUTION_CLOUD_LLM_API_KEY=sk-xxxxxxxxxxxxxxxx
+# 必須
+OPENAI_API_KEY=sk-...                    # プロファイリング用 LLM
+EVOLUTION_CLOUD_LLM_API_KEY=sk-...       # Evolution チャット用 LLM
 
 # オプション（全てデフォルト値あり）
-EVOLUTION_EMBEDDING_MODEL=text-embedding-ada-002
 EVOLUTION_CLOUD_LLM_MODEL=gpt-4.1-mini
 EVOLUTION_SLM_BASE_URL=http://localhost:11434
 EVOLUTION_SLM_MODEL=llama3.2
 EVOLUTION_SEMANTIC_CACHE_THRESHOLD=0.92
-EVOLUTION_ROUTING_TOKEN_THRESHOLD=50
 ```
-
-### クイックスタート（Evolution）
-
-```bash
-# 1. 環境変数設定
-echo "EVOLUTION_CLOUD_LLM_API_KEY=sk-your-key" >> backend/.env
-
-# 2. 依存インストール + 起動
-cd backend
-uv sync --all-extras
-uv run uvicorn app.main:app --port 8001
-
-# 3. フロントエンドからアクセス
-cd frontend && npm run dev
-# → http://localhost:5173/evolution
-```
-
-初回のみ Swagger UI (`http://localhost:8001/docs`) で `POST /api/v1/evolution/profiles` にプロファイル JSON を投げてください。以降はサーバー再起動しても DB から自動復元されるため、手動ロードは不要です。
-
-### フロントエンド画面
-
-| URL | 画面 |
-|-----|------|
-| http://localhost:5173/evolution | Evolution メイン（設定/チャット/ディスカッション） |
-| http://localhost:5173/survey | 質問フロー（プロファイル生成） |
-| http://localhost:5173/results | 診断結果ダッシュボード |
-
-### 既知の残件
-
-- 質問フロー完了 → Evolution に自動連携する導線が未実装（手動でプロファイルロードが必要）
-- MCP Server の独立起動スクリプト (CLI エントリポイント) が未作成
-- DB スキーマ変更時のマイグレーションツールがない（現状は自動 CREATE IF NOT EXISTS）
 
 ---
 
-## ビジョン
+## 画面一覧
 
-最終的に以下を実現する:
+| パス | 画面 | 概要 |
+|------|------|------|
+| `/` | ランディング | プロダクト紹介 + CTA |
+| `/survey` | 診断 | 47問の質問フロー |
+| `/results` | 結果 | 4軸スライダー + JSON プレビュー |
+| `/evolution` | 分身と遊ぶ | エージェント管理 / チャット / ディスカッション |
 
-1. **AI自分の生成**: プロファイルJSONをLLMのシステムプロンプトにロードし、あなたの分身として振る舞うAIエージェントを構築
-2. **AI同士の対話**: 異なるプロファイルを持つ「AI自分」同士を対話させ、議論やブレストを自動化
-3. **代理行動**: AI自分が代理でミーティングに参加したり、情報収集したりする
-4. **継続的学習**: 対話ログからプロファイルを自動更新し、より精度の高い分身へ進化
+---
+
+## テスト
+
+```bash
+# バックエンド（549テスト + 36 PBT プロパティ）
+cd backend && uv run pytest tests/ -v
+
+# フロントエンド
+cd frontend && npm run test
+```
+
+---
+
+## プロジェクト構成
+
+```
+├── backend/
+│   ├── app/
+│   │   ├── api/           # プロファイリング API
+│   │   ├── core/          # スコアリング / 正規化 / プロファイル生成
+│   │   ├── evolution/     # Agent Evolution サブモジュール (14ファイル)
+│   │   ├── models/        # Pydantic モデル
+│   │   └── services/      # データローダー / LLM / セッション管理
+│   ├── data/              # SQLite DB + 質問 YAML + マッピング辞書
+│   └── tests/             # pytest + Hypothesis
+├── frontend/
+│   ├── src/
+│   │   ├── components/    # UI コンポーネント (質問カード + Evolution)
+│   │   ├── composables/   # useApi, useTheme
+│   │   ├── views/         # Landing / Survey / Results / Evolution
+│   │   └── assets/styles/ # Tailwind globals.css (テーマ定義)
+│   └── vite.config.ts
+├── landing/               # 外部共有用プロモ HTML (単体)
+└── .kiro/specs/           # 仕様書 (requirements / design / tasks)
+```
 
 ---
 
@@ -187,23 +153,9 @@ cd frontend && npm run dev
 
 **デュアルライセンス方式**
 
-このプロジェクトは [GNU Affero General Public License v3.0 (AGPLv3)](./LICENSE) のもとで公開されています。
+- 個人・非営利・OSS: [AGPLv3](./LICENSE)
+- 商用: 別途ライセンスあり（[お問い合わせ](https://github.com/nekotoiruka/AgentProfiler/issues)）
 
-- **個人・非営利・オープンソース利用**: AGPLv3 のもと、無料で自由にご利用いただけます。ただし、本ソフトウェアを利用・改変してネットワーク経由でサービスを提供する場合、AGPLv3 の条項に基づきソースコードの公開義務が発生します。
-- **商用利用**: ソースコード公開義務を免除する商用ライセンスを別途ご用意しています。クローズドソースでの組込み利用や SaaS 提供をご希望の場合はお問い合わせください。
+---
 
-```
-Copyright (c) 2026 nekotoiruka
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Affero General Public License for more details.
-```
-
-商用ライセンスについてのお問い合わせ: [GitHub Issues](https://github.com/nekotoiruka/AgentProfiler/issues) または直接ご連絡ください。
+Built with obsession by [@nekotoiruka](https://github.com/nekotoiruka)
