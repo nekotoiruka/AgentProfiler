@@ -59,8 +59,11 @@
 | フロントエンド | Vue 3 + TypeScript + Vite + Pinia |
 | バックエンド | FastAPI + Python 3.12+ + Pydantic v2 |
 | DB | SQLite (aiosqlite) |
-| LLM連携 | OpenAI Responses API (gpt-4.1-mini) |
-| テスト | pytest + Hypothesis (Backend) / Vitest (Frontend) |
+| LLM連携 | OpenAI API (gpt-4.1-mini) + ollama (SLM ルーティング) |
+| 検索 | numpy (cosine similarity) + hash index (lexical) |
+| キャッシュ | SQLite セマンティックキャッシュ (埋め込みベクトル) |
+| テスト | pytest + Hypothesis (PBT) / Vitest + Vue Test Utils |
+| プロトコル | MCP (Model Context Protocol) stdio/SSE |
 
 ---
 
@@ -97,6 +100,69 @@ npm run dev
 | 4 | Business OS | 4択 + Other | 9問 | 思考特性スコアリング |
 | 5 | Communication | 4択 + Other | 9問 | 思考特性スコアリング |
 | 6 | Lifestyle/Hobbies | 4択 + Other | 9問 | 思考特性スコアリング |
+
+---
+
+## Agent Evolution（ランタイムシステム）
+
+プロファイル生成後の「AI自分」を実際に動かすランタイム機能群です。`/api/v1/evolution/` 以下で REST API を提供します。
+
+### できること
+
+| 機能 | 概要 |
+|------|------|
+| 3層コンテキスト管理 | Base OS (常駐) / Agent Skills (オンデマンド) / MCP (動的検索) を統合 |
+| ハイブリッド検索 | Lexical 完全一致 + Semantic ベクトル検索の重み付き統合 |
+| セマンティックキャッシュ | 類似発話を SQLite + cosine similarity で検知し LLM コスト削減 |
+| ハイブリッドルーティング | 軽量発話→ローカル SLM (ollama) / 複雑発話→Cloud LLM に自動振り分け |
+| 分身エージェント管理 | 1プロファイルから複数 AI ペルソナ（分身）を作成・管理 |
+| 1対1チャット | SSE ストリーミング対応の会話 API (スレッド管理付き) |
+| マルチエージェント議論 | 2〜6 体の分身がターン制で自律議論 (トモコレ的シアター体験) |
+| 相性診断 + レコメンド | 4軸 Cosine Similarity / Complementarity による分身間マッチング |
+| Agent Pack Zip 生成 | プロファイルから IDE 配置可能な構成資産を自動ビルド & ダウンロード |
+| 会話ログエクスポート | チャット・議論ログを JSON / Markdown で出力 |
+| MCP Server | semantic_contexts を Model Context Protocol で外部公開 |
+
+### Evolution 環境変数
+
+```bash
+# 必須（未設定時は Evolution 機能が無効化される）
+EVOLUTION_CLOUD_LLM_API_KEY=sk-xxxxxxxxxxxxxxxx
+
+# オプション（全てデフォルト値あり）
+EVOLUTION_EMBEDDING_MODEL=text-embedding-ada-002
+EVOLUTION_CLOUD_LLM_MODEL=gpt-4.1-mini
+EVOLUTION_SLM_BASE_URL=http://localhost:11434
+EVOLUTION_SLM_MODEL=llama3.2
+EVOLUTION_SEMANTIC_CACHE_THRESHOLD=0.92
+EVOLUTION_ROUTING_TOKEN_THRESHOLD=50
+```
+
+### クイックスタート（Evolution）
+
+```bash
+# 1. 環境変数設定
+echo "EVOLUTION_CLOUD_LLM_API_KEY=sk-your-key" >> backend/.env
+
+# 2. 依存インストール + 起動
+cd backend
+uv sync --all-extras
+uv run uvicorn app.main:app --port 8001
+
+# 3. プロファイルロード → チャット開始
+curl -X POST http://localhost:8001/api/v1/evolution/profiles -H "Content-Type: application/json" \
+  -d '{"profile_id":"prof_000001","base_os":{"axes":{"extroverted_introverted":0.7,"sensing_intuition":0.4,"thinking_feeling":0.8,"judging_perceiving":0.3},"decision_style":"analytical","do_not_list":["rush"]},"lexical_tags":["python","fastapi","vue","docker","ts"],"semantic_contexts":{"problem_solving":"段階的に分析"},"context_layers":{"base_os":1,"lexical_tags":2,"semantic_contexts":3}}'
+
+curl -X POST http://localhost:8001/api/v1/evolution/agents -H "Content-Type: application/json" \
+  -d '{"profile_id":"prof_000001","display_name":"分身1号"}'
+```
+
+### 既知の残件
+
+- Frontend コンポーネントは実装済みだが、ルーティング (router/index.ts) への統合がまだ
+- MCP Server の独立起動スクリプト (CLI エントリポイント) が未作成
+- 実 LLM (OpenAI / ollama) との E2E テストは未実施（全テストはモック）
+- DB スキーマ変更時のマイグレーションツールがない（現状は自動 CREATE IF NOT EXISTS）
 
 ---
 
