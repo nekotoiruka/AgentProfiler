@@ -17,6 +17,11 @@ const router = createRouter({
       name: 'results',
       component: () => import('@/views/ResultsDashboardView.vue'),
     },
+    {
+      path: '/evolution',
+      name: 'evolution',
+      component: () => import('@/views/EvolutionView.vue'),
+    },
   ],
 });
 
