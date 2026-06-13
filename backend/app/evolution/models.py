@@ -146,6 +146,20 @@ class AgentResponse(BaseModel):
   is_active: bool
 
 
+# --- Chat モデル ---
+
+
+class ChatMessageRequest(BaseModel):
+  """チャットメッセージ送信リクエスト
+
+  message: ユーザーメッセージテキスト
+  thread_id: 既存スレッド ID（省略時は新規スレッド作成）
+  """
+
+  message: str = Field(..., min_length=1)
+  thread_id: str | None = None
+
+
 
 # --- Evolution プロファイルバリデーション ---
 

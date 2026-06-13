@@ -9,6 +9,7 @@ import logging
 from pathlib import Path
 
 from app.evolution.agent_manager import AgentManager
+from app.evolution.chat import ChatService
 from app.evolution.config import EvolutionSettings
 from app.evolution.context_layer_manager import ContextLayerManager
 from app.evolution.embedding_client import EmbeddingClient
@@ -97,6 +98,14 @@ async def init_evolution_services() -> None:
   # Package Generator (Agent Pack Zip 生成)
   package_generator = PackageGenerator(prompt_engine=prompt_engine)
 
+  # Chat Service (1対1チャット: スレッド管理・会話履歴・SSE)
+  chat_service = ChatService(
+    db_path=evolution_db_path,
+    routing_engine=routing_engine,
+    context_layer_manager=context_layer_manager,
+  )
+  await chat_service.init_db()
+
   # サービスコンテナに登録
   _services["settings"] = settings
   _services["embedding_client"] = embedding_client
@@ -107,6 +116,7 @@ async def init_evolution_services() -> None:
   _services["semantic_cache"] = semantic_cache
   _services["agent_manager"] = agent_manager
   _services["package_generator"] = package_generator
+  _services["chat_service"] = chat_service
 
   logger.info("Evolution services initialized successfully")
 
@@ -117,7 +127,8 @@ def get_service(name: str) -> object | None:
   Args:
     name: サービス名 (settings, embedding_client, semantic_retriever,
           context_layer_manager, prompt_engine, routing_engine,
-          semantic_cache, agent_manager, package_generator)
+          semantic_cache, agent_manager, package_generator,
+          chat_service)
 
   Returns:
     登録済みサービスインスタンス。未初期化の場合は None。

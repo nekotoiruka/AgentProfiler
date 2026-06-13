@@ -10,21 +10,25 @@
 - GET /profiles/{profile_id}/cache/stats — キャッシュ統計情報
 - DELETE /profiles/{profile_id}/cache — キャッシュ無効化
 - GET /agents/{agent_id}/package — Agent Pack Zip ダウンロード
+- POST /agents/{agent_id}/chat — チャットメッセージ送信 + レスポンス (SSE 対応)
+- GET /agents/{agent_id}/chat/{thread_id} — 会話履歴取得
 """
 
 import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import Response
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import Response, StreamingResponse
 
 from app.evolution.agent_manager import AgentManager
+from app.evolution.chat import ChatService
 from app.evolution.context_layer_manager import ContextLayerManager
 from app.evolution.dependencies import get_service
 from app.evolution.hybrid_search import HybridSearchEngine
 from app.evolution.models import (
   AgentResponse,
   CacheStats,
+  ChatMessageRequest,
   CreateAgentRequest,
   HybridSearchRequest,
   HybridSearchResponse,
@@ -527,3 +531,69 @@ async def download_agent_package(agent_id: str) -> Response:
       "Content-Disposition": f'attachment; filename="{filename}"',
     },
   )
+
+
+# --- Chat エンドポイント ---
+
+
+async def _require_active_agent(agent_id: str) -> None:
+  """エージェントが存在しアクティブであることを確認する。
+
+  非アクティブまたは未登録の場合は 404 Not Found を送出する。
+  """
+  agent_manager: AgentManager = get_service("agent_manager")  # type: ignore
+  record = await agent_manager.get(agent_id)
+  if record is None or not record.is_active:
+    raise HTTPException(
+      status_code=404,
+      detail=f"Agent '{agent_id}' not found or not active",
+    )
+
+
+@evolution_router.post("/agents/{agent_id}/chat", response_model=None)
+async def send_chat_message(
+  agent_id: str, request: ChatMessageRequest, raw_request: Request
+) -> dict | StreamingResponse:
+  """チャットメッセージを送信し、エージェントのレスポンスを返す。
+
+  Accept: text/event-stream ヘッダー指定時は SSE ストリーミングで返却する。
+  通常リクエスト時は JSON レスポンスを返却する。
+
+  Validates: Requirements 17.1, 17.5, 17.7
+  """
+  _require_services()
+  await _require_active_agent(agent_id)
+
+  chat_service: ChatService = get_service("chat_service")  # type: ignore
+
+  # Accept ヘッダーで SSE ストリーミング判定
+  accept = raw_request.headers.get("accept", "")
+  if "text/event-stream" in accept:
+    return StreamingResponse(
+      chat_service.stream_response(agent_id, request.message, request.thread_id),
+      media_type="text/event-stream",
+    )
+
+  # 通常 JSON レスポンス
+  result = await chat_service.send_message(
+    agent_id=agent_id,
+    message=request.message,
+    thread_id=request.thread_id,
+  )
+  return result
+
+
+@evolution_router.get("/agents/{agent_id}/chat/{thread_id}")
+async def get_chat_history(agent_id: str, thread_id: str) -> list[dict]:
+  """指定スレッドの会話履歴を取得する。
+
+  時系列昇順で全ターンを返却する。
+
+  Validates: Requirements 17.1, 17.5
+  """
+  _require_services()
+  await _require_active_agent(agent_id)
+
+  chat_service: ChatService = get_service("chat_service")  # type: ignore
+  history = await chat_service.get_history(thread_id)
+  return history
