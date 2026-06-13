@@ -106,6 +106,46 @@ class ProfileLoadResponse(BaseModel):
   status: str
 
 
+# --- Agent CRUD モデル ---
+
+
+class CreateAgentRequest(BaseModel):
+  """エージェント作成リクエスト
+
+  profile_id: 関連付けるプロファイル ID (prof_XXXXXX 形式)
+  display_name: エージェントの表示名
+  """
+
+  profile_id: str = Field(..., pattern=r"^prof_\d{6}$")
+  display_name: str = Field(..., min_length=1)
+
+
+class UpdateAgentRequest(BaseModel):
+  """エージェント更新リクエスト
+
+  display_name: 新しい表示名
+  """
+
+  display_name: str = Field(..., min_length=1)
+
+
+class AgentResponse(BaseModel):
+  """エージェントレスポンス
+
+  agent_id: エージェント一意識別子 (UUID v4)
+  profile_id: 関連プロファイル ID
+  display_name: 表示名
+  created_at: 作成日時 (ISO 8601)
+  is_active: 有効フラグ
+  """
+
+  agent_id: str
+  profile_id: str
+  display_name: str
+  created_at: str
+  is_active: bool
+
+
 
 # --- Evolution プロファイルバリデーション ---
 

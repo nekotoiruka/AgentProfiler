@@ -8,9 +8,11 @@
 import logging
 from pathlib import Path
 
+from app.evolution.agent_manager import AgentManager
 from app.evolution.config import EvolutionSettings
 from app.evolution.context_layer_manager import ContextLayerManager
 from app.evolution.embedding_client import EmbeddingClient
+from app.evolution.package_generator import PackageGenerator
 from app.evolution.prompt_engine import PromptEngine
 from app.evolution.routing_engine import RoutingEngine
 from app.evolution.semantic_cache import SemanticCache
@@ -82,6 +84,19 @@ async def init_evolution_services() -> None:
   )
   await semantic_cache.init_db()
 
+  # Agent Manager (分身プロファイル CRUD 管理)
+  evolution_db_path = str(
+    Path(__file__).resolve().parent.parent.parent / "data" / "evolution.db"
+  )
+  agent_manager = AgentManager(
+    db_path=evolution_db_path,
+    context_layer_manager=context_layer_manager,
+  )
+  await agent_manager.init_db()
+
+  # Package Generator (Agent Pack Zip 生成)
+  package_generator = PackageGenerator(prompt_engine=prompt_engine)
+
   # サービスコンテナに登録
   _services["settings"] = settings
   _services["embedding_client"] = embedding_client
@@ -90,6 +105,8 @@ async def init_evolution_services() -> None:
   _services["prompt_engine"] = prompt_engine
   _services["routing_engine"] = routing_engine
   _services["semantic_cache"] = semantic_cache
+  _services["agent_manager"] = agent_manager
+  _services["package_generator"] = package_generator
 
   logger.info("Evolution services initialized successfully")
 
@@ -99,7 +116,8 @@ def get_service(name: str) -> object | None:
 
   Args:
     name: サービス名 (settings, embedding_client, semantic_retriever,
-          context_layer_manager, prompt_engine, routing_engine, semantic_cache)
+          context_layer_manager, prompt_engine, routing_engine,
+          semantic_cache, agent_manager, package_generator)
 
   Returns:
     登録済みサービスインスタンス。未初期化の場合は None。

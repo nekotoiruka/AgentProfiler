@@ -40,6 +40,8 @@ class ContextLayerManager:
     """
     # profile_id → BaseOS のインメモリキャッシュ（セッション間で共有）
     self._base_os_cache: dict[str, BaseOS] = {}
+    # profile_id → ProfileOutput の完全キャッシュ（PackageGenerator 等で利用）
+    self._profiles: dict[str, ProfileOutput] = {}
     # profile_id → LexicalRetriever（プロファイルごとに個別インスタンス）
     self._lexical_retrievers: dict[str, LexicalRetriever] = {}
     # profile_id → semantic_contexts（MCP フォールバック用ローカルデータ）
@@ -81,6 +83,9 @@ class ContextLayerManager:
       raise ValueError(
         f"context_layers.semantic_contexts must be 3, got {profile.context_layers.semantic_contexts}"
       )
+
+    # ProfileOutput 全体をキャッシュ（PackageGenerator 等で利用）
+    self._profiles[profile.profile_id] = profile
 
     # Layer 1: Base OS をキャッシュ（profile_id 間で共有）
     self._base_os_cache[profile.profile_id] = profile.base_os
@@ -124,6 +129,25 @@ class ContextLayerManager:
     if profile_id not in self._base_os_cache:
       raise KeyError(f"Profile '{profile_id}' is not loaded")
     return self._base_os_cache[profile_id]
+
+  def get_profile(self, profile_id: str) -> ProfileOutput:
+    """キャッシュ済み ProfileOutput を返す。
+
+    load_profile() で保存された完全な ProfileOutput を返却する。
+    PackageGenerator 等で完全なプロファイルデータが必要な場合に使用する。
+
+    Args:
+      profile_id: 対象のプロファイル識別子
+
+    Returns:
+      キャッシュ済みの ProfileOutput
+
+    Raises:
+      KeyError: profile_id が未ロードの場合
+    """
+    if profile_id not in self._profiles:
+      raise KeyError(f"Profile '{profile_id}' is not loaded")
+    return self._profiles[profile_id]
 
   async def get_skill_context(
     self, profile_id: str, function_name: str, params: dict

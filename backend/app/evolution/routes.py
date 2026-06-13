@@ -9,18 +9,23 @@
 - GET /profiles/{profile_id}/prompt — 生成済みシステムプロンプト取得
 - GET /profiles/{profile_id}/cache/stats — キャッシュ統計情報
 - DELETE /profiles/{profile_id}/cache — キャッシュ無効化
+- GET /agents/{agent_id}/package — Agent Pack Zip ダウンロード
 """
 
 import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
 
+from app.evolution.agent_manager import AgentManager
 from app.evolution.context_layer_manager import ContextLayerManager
 from app.evolution.dependencies import get_service
 from app.evolution.hybrid_search import HybridSearchEngine
 from app.evolution.models import (
+  AgentResponse,
   CacheStats,
+  CreateAgentRequest,
   HybridSearchRequest,
   HybridSearchResponse,
   InferRequest,
@@ -28,8 +33,10 @@ from app.evolution.models import (
   ProfileLoadResponse,
   ProfileValidationError,
   SearchResultItem,
+  UpdateAgentRequest,
   validate_profile_for_evolution,
 )
+from app.evolution.package_generator import PackageGenerator
 from app.evolution.prompt_engine import PromptEngine
 from app.evolution.routing_engine import RoutingEngine
 from app.evolution.semantic_cache import SemanticCache
@@ -319,3 +326,204 @@ def _build_system_prompt_from_base_os(base_os) -> str:
     lines.append(f"- {item}")
 
   return "\n".join(lines)
+
+
+# --- Agent CRUD エンドポイント ---
+
+
+@evolution_router.post("/agents", response_model=AgentResponse, status_code=201)
+async def create_agent(request: CreateAgentRequest) -> AgentResponse:
+  """新規エージェントペルソナを作成する。
+
+  profile_id が ContextLayerManager にロード済みであることを検証し、
+  AgentManager を介してレコードを作成する。
+
+  Validates: Requirements 16.4, 16.6
+  """
+  _require_services()
+
+  agent_manager: AgentManager = get_service("agent_manager")  # type: ignore
+
+  try:
+    record = await agent_manager.create(
+      profile_id=request.profile_id,
+      display_name=request.display_name,
+    )
+  except ValueError as e:
+    # profile_id が未ロードの場合
+    raise HTTPException(status_code=422, detail=str(e))
+
+  return AgentResponse(
+    agent_id=record.agent_id,
+    profile_id=record.profile_id,
+    display_name=record.display_name,
+    created_at=record.created_at,
+    is_active=record.is_active,
+  )
+
+
+@evolution_router.get("/agents", response_model=list[AgentResponse])
+async def list_agents(profile_id: str) -> list[AgentResponse]:
+  """指定プロファイルの有効エージェント一覧を取得する。
+
+  Validates: Requirements 16.7
+  """
+  _require_services()
+
+  agent_manager: AgentManager = get_service("agent_manager")  # type: ignore
+  records = await agent_manager.list_active(profile_id)
+
+  return [
+    AgentResponse(
+      agent_id=r.agent_id,
+      profile_id=r.profile_id,
+      display_name=r.display_name,
+      created_at=r.created_at,
+      is_active=r.is_active,
+    )
+    for r in records
+  ]
+
+
+@evolution_router.get("/agents/{agent_id}", response_model=AgentResponse)
+async def get_agent(agent_id: str) -> AgentResponse:
+  """エージェントペルソナを個別取得する。
+
+  Validates: Requirements 16.4
+  """
+  _require_services()
+
+  agent_manager: AgentManager = get_service("agent_manager")  # type: ignore
+  record = await agent_manager.get(agent_id)
+
+  if record is None or not record.is_active:
+    raise HTTPException(
+      status_code=404,
+      detail=f"Agent '{agent_id}' not found or not active",
+    )
+
+  return AgentResponse(
+    agent_id=record.agent_id,
+    profile_id=record.profile_id,
+    display_name=record.display_name,
+    created_at=record.created_at,
+    is_active=record.is_active,
+  )
+
+
+@evolution_router.patch("/agents/{agent_id}", response_model=AgentResponse)
+async def update_agent(
+  agent_id: str, request: UpdateAgentRequest
+) -> AgentResponse:
+  """エージェントの display_name を更新する。
+
+  Validates: Requirements 16.4
+  """
+  _require_services()
+
+  agent_manager: AgentManager = get_service("agent_manager")  # type: ignore
+
+  # 存在確認 + アクティブチェック
+  existing = await agent_manager.get(agent_id)
+  if existing is None or not existing.is_active:
+    raise HTTPException(
+      status_code=404,
+      detail=f"Agent '{agent_id}' not found or not active",
+    )
+
+  try:
+    record = await agent_manager.update_display_name(
+      agent_id=agent_id,
+      display_name=request.display_name,
+    )
+  except ValueError:
+    raise HTTPException(
+      status_code=404,
+      detail=f"Agent '{agent_id}' not found",
+    )
+
+  return AgentResponse(
+    agent_id=record.agent_id,
+    profile_id=record.profile_id,
+    display_name=record.display_name,
+    created_at=record.created_at,
+    is_active=record.is_active,
+  )
+
+
+@evolution_router.delete("/agents/{agent_id}")
+async def delete_agent(agent_id: str) -> dict:
+  """エージェントをソフトデリートする。
+
+  Validates: Requirements 16.4
+  """
+  _require_services()
+
+  agent_manager: AgentManager = get_service("agent_manager")  # type: ignore
+
+  # 存在確認 + アクティブチェック
+  existing = await agent_manager.get(agent_id)
+  if existing is None or not existing.is_active:
+    raise HTTPException(
+      status_code=404,
+      detail=f"Agent '{agent_id}' not found or not active",
+    )
+
+  try:
+    await agent_manager.soft_delete(agent_id)
+  except ValueError:
+    raise HTTPException(
+      status_code=404,
+      detail=f"Agent '{agent_id}' not found",
+    )
+
+  return {"agent_id": agent_id, "status": "deleted"}
+
+
+@evolution_router.get("/agents/{agent_id}/package")
+async def download_agent_package(agent_id: str) -> Response:
+  """Agent Pack Zip をダウンロードする。
+
+  agent_id に紐づくプロファイルから PackageGenerator で構成資産を生成し、
+  Zip アーカイブとして返却する。
+
+  Validates: Requirements 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 15.7
+  """
+  _require_services()
+
+  agent_manager: AgentManager = get_service("agent_manager")  # type: ignore
+  clm: ContextLayerManager = get_service("context_layer_manager")  # type: ignore
+  package_generator: PackageGenerator = get_service("package_generator")  # type: ignore
+
+  # エージェント存在確認 + アクティブチェック
+  record = await agent_manager.get(agent_id)
+  if record is None or not record.is_active:
+    raise HTTPException(
+      status_code=404,
+      detail=f"Agent '{agent_id}' not found or not active",
+    )
+
+  # プロファイル取得（CLM にキャッシュ済みの完全な ProfileOutput）
+  try:
+    profile = clm.get_profile(record.profile_id)
+  except KeyError:
+    raise HTTPException(
+      status_code=404,
+      detail=f"Profile '{record.profile_id}' is not loaded",
+    )
+
+  # Zip 生成
+  zip_bytes = package_generator.build_zip(
+    profile=profile,
+    agent_id=agent_id,
+    display_name=record.display_name,
+  )
+
+  filename = f"agent_pack_{agent_id}.zip"
+  return Response(
+    content=zip_bytes,
+    media_type="application/zip",
+    headers={
+      "Content-Disposition": f'attachment; filename="{filename}"',
+    },
+  )

@@ -416,3 +416,181 @@ class TestInvalidateCache:
     resp = await client.delete("/api/v1/evolution/profiles/prof_000099/cache")
     assert resp.status_code == 404
     assert "not loaded" in resp.json()["detail"]
+
+
+# --- Agent CRUD エンドポイント ---
+
+
+class TestAgentEndpoints:
+  """Agent CRUD エンドポイントの統合テスト
+
+  Validates: Requirements 16.4, 16.6, 16.7
+  """
+
+  @pytest.fixture(autouse=True)
+  def setup_agent_manager(self, mock_clm):
+    """AgentManager をモックで初期化してサービスに登録する。"""
+    from app.evolution.agent_manager import AgentManager, AgentRecord
+
+    mock_agent_manager = AsyncMock(spec=AgentManager)
+    # デフォルトのモック動作を設定
+    mock_agent_manager.create = AsyncMock(
+      return_value=AgentRecord(
+        agent_id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+        profile_id="prof_000001",
+        display_name="Test Agent",
+        created_at="2025-01-01T00:00:00+00:00",
+        is_active=True,
+      )
+    )
+    mock_agent_manager.list_active = AsyncMock(
+      return_value=[
+        AgentRecord(
+          agent_id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          profile_id="prof_000001",
+          display_name="Test Agent",
+          created_at="2025-01-01T00:00:00+00:00",
+          is_active=True,
+        )
+      ]
+    )
+    mock_agent_manager.get = AsyncMock(
+      return_value=AgentRecord(
+        agent_id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+        profile_id="prof_000001",
+        display_name="Test Agent",
+        created_at="2025-01-01T00:00:00+00:00",
+        is_active=True,
+      )
+    )
+    mock_agent_manager.update_display_name = AsyncMock(
+      return_value=AgentRecord(
+        agent_id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+        profile_id="prof_000001",
+        display_name="Updated Name",
+        created_at="2025-01-01T00:00:00+00:00",
+        is_active=True,
+      )
+    )
+    mock_agent_manager.soft_delete = AsyncMock()
+
+    evo_deps._services["agent_manager"] = mock_agent_manager
+    self.mock_agent_manager = mock_agent_manager
+
+  async def test_create_agent_success(self, client: AsyncClient) -> None:
+    """正常なリクエストでエージェント作成が成功する (201)。"""
+    resp = await client.post(
+      "/api/v1/evolution/agents",
+      json={"profile_id": "prof_000001", "display_name": "Test Agent"},
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["agent_id"] == "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    assert body["profile_id"] == "prof_000001"
+    assert body["display_name"] == "Test Agent"
+    assert body["is_active"] is True
+    assert "created_at" in body
+
+  async def test_create_agent_unloaded_profile_422(
+    self, client: AsyncClient
+  ) -> None:
+    """未ロード profile_id で 422 を返す。"""
+    self.mock_agent_manager.create.side_effect = ValueError(
+      "Profile 'prof_999999' is not loaded."
+    )
+    resp = await client.post(
+      "/api/v1/evolution/agents",
+      json={"profile_id": "prof_999999", "display_name": "Bad Agent"},
+    )
+    assert resp.status_code == 422
+    assert "not loaded" in resp.json()["detail"]
+
+  async def test_list_agents_success(self, client: AsyncClient) -> None:
+    """有効エージェント一覧が取得できる。"""
+    resp = await client.get(
+      "/api/v1/evolution/agents", params={"profile_id": "prof_000001"}
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert isinstance(body, list)
+    assert len(body) == 1
+    assert body[0]["agent_id"] == "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+
+  async def test_list_agents_empty(self, client: AsyncClient) -> None:
+    """エージェントなしの場合に空リストを返す。"""
+    self.mock_agent_manager.list_active.return_value = []
+    resp = await client.get(
+      "/api/v1/evolution/agents", params={"profile_id": "prof_000099"}
+    )
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+  async def test_get_agent_success(self, client: AsyncClient) -> None:
+    """存在するエージェントの個別取得が成功する。"""
+    resp = await client.get(
+      "/api/v1/evolution/agents/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["agent_id"] == "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    assert body["display_name"] == "Test Agent"
+
+  async def test_get_agent_not_found_404(self, client: AsyncClient) -> None:
+    """存在しないエージェントで 404 を返す。"""
+    self.mock_agent_manager.get.return_value = None
+    resp = await client.get("/api/v1/evolution/agents/nonexistent-id")
+    assert resp.status_code == 404
+    assert "not found" in resp.json()["detail"]
+
+  async def test_get_agent_inactive_404(self, client: AsyncClient) -> None:
+    """非アクティブなエージェントで 404 を返す。"""
+    from app.evolution.agent_manager import AgentRecord
+
+    self.mock_agent_manager.get.return_value = AgentRecord(
+      agent_id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      profile_id="prof_000001",
+      display_name="Inactive",
+      created_at="2025-01-01T00:00:00+00:00",
+      is_active=False,
+    )
+    resp = await client.get(
+      "/api/v1/evolution/agents/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    )
+    assert resp.status_code == 404
+    assert "not active" in resp.json()["detail"]
+
+  async def test_update_agent_success(self, client: AsyncClient) -> None:
+    """display_name 更新が成功する。"""
+    resp = await client.patch(
+      "/api/v1/evolution/agents/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      json={"display_name": "Updated Name"},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["display_name"] == "Updated Name"
+
+  async def test_update_agent_not_found_404(self, client: AsyncClient) -> None:
+    """存在しないエージェントの更新で 404 を返す。"""
+    self.mock_agent_manager.get.return_value = None
+    resp = await client.patch(
+      "/api/v1/evolution/agents/nonexistent-id",
+      json={"display_name": "New Name"},
+    )
+    assert resp.status_code == 404
+
+  async def test_delete_agent_success(self, client: AsyncClient) -> None:
+    """エージェントのソフトデリートが成功する。"""
+    resp = await client.delete(
+      "/api/v1/evolution/agents/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["agent_id"] == "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    assert body["status"] == "deleted"
+
+  async def test_delete_agent_not_found_404(self, client: AsyncClient) -> None:
+    """存在しないエージェントの削除で 404 を返す。"""
+    self.mock_agent_manager.get.return_value = None
+    resp = await client.delete("/api/v1/evolution/agents/nonexistent-id")
+    assert resp.status_code == 404
+    assert "not found" in resp.json()["detail"]
