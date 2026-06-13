@@ -5,6 +5,7 @@
 各ルートハンドラは get_service() で必要なサービスを取得する。
 """
 
+import json
 import logging
 from pathlib import Path
 
@@ -21,6 +22,7 @@ from app.evolution.prompt_engine import PromptEngine
 from app.evolution.routing_engine import RoutingEngine
 from app.evolution.semantic_cache import SemanticCache
 from app.evolution.semantic_retriever import SemanticRetriever
+from app.models.profile import ProfileOutput
 
 logger = logging.getLogger(__name__)
 
@@ -143,6 +145,24 @@ async def init_evolution_services() -> None:
   _services["export_service"] = export_service
 
   logger.info("Evolution services initialized successfully")
+
+  # --- プロファイル自動復元 ---
+  # DB に保存されている全プロファイルを ContextLayerManager にロードする。
+  # これによりサーバー再起動後もエージェントが即座に利用可能になる。
+  profile_ids = await agent_manager.list_profile_ids()
+  restored_count = 0
+  for pid in profile_ids:
+    try:
+      profile_json = await agent_manager.get_profile_json(pid)
+      if profile_json:
+        profile = ProfileOutput.model_validate_json(profile_json)
+        await context_layer_manager.load_profile(profile)
+        restored_count += 1
+    except Exception as e:
+      logger.warning("Failed to restore profile %s: %s", pid, e)
+
+  if restored_count > 0:
+    logger.info("Restored %d profiles from DB", restored_count)
 
 
 def get_service(name: str) -> object | None:

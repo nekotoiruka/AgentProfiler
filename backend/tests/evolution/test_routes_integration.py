@@ -89,11 +89,16 @@ def setup_services(mock_clm, mock_cache, mock_routing, mock_prompt_engine):
 
   テストごとに _services を上書きし、テスト後にクリアする。
   """
+  mock_agent_mgr = AsyncMock()
+  mock_agent_mgr.get = AsyncMock(return_value=None)
+  mock_agent_mgr.save_profile = AsyncMock()
+
   original_services = evo_deps._services.copy()
   evo_deps._services["context_layer_manager"] = mock_clm
   evo_deps._services["semantic_cache"] = mock_cache
   evo_deps._services["routing_engine"] = mock_routing
   evo_deps._services["prompt_engine"] = mock_prompt_engine
+  evo_deps._services["agent_manager"] = mock_agent_mgr
   evo_deps._services["settings"] = MagicMock()
   yield
   evo_deps._services.clear()

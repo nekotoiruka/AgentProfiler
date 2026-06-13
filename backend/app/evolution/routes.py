@@ -93,6 +93,8 @@ def _require_profile_loaded(profile_id: str) -> None:
 async def load_profile(profile: ProfileOutput) -> ProfileLoadResponse:
   """ProfileOutput をロードし、3層コンテキストを初期化する。
 
+  プロファイルは DB に永続化され、サーバー再起動時に自動復元される。
+
   Validates: Requirements 11.1, 11.2
   """
   _require_services()
@@ -105,6 +107,12 @@ async def load_profile(profile: ProfileOutput) -> ProfileLoadResponse:
 
   clm: ContextLayerManager = get_service("context_layer_manager")  # type: ignore
   await clm.load_profile(profile)
+
+  # DB に永続化（サーバー再起動時の自動復元用）
+  agent_manager: AgentManager = get_service("agent_manager")  # type: ignore
+  await agent_manager.save_profile(
+    profile.profile_id, profile.model_dump_json()
+  )
 
   return ProfileLoadResponse(
     profile_id=profile.profile_id,

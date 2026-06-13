@@ -52,7 +52,7 @@ class AgentManager:
     self._clm = context_layer_manager
 
   async def init_db(self) -> None:
-    """agents テーブルと profile_id インデックスを初期化する。"""
+    """agents テーブル + profiles テーブルとインデックスを初期化する。"""
     async with aiosqlite.connect(self._db_path) as db:
       await db.execute("""
         CREATE TABLE IF NOT EXISTS agents (
@@ -67,8 +67,60 @@ class AgentManager:
         CREATE INDEX IF NOT EXISTS idx_agents_profile
         ON agents(profile_id)
       """)
+      # プロファイル永続化テーブル（サーバー再起動時に自動復元するため）
+      await db.execute("""
+        CREATE TABLE IF NOT EXISTS profiles (
+          profile_id TEXT PRIMARY KEY,
+          profile_json TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        )
+      """)
       await db.commit()
-    logger.info("AgentManager: agents table initialized at %s", self._db_path)
+    logger.info("AgentManager: tables initialized at %s", self._db_path)
+
+  async def save_profile(self, profile_id: str, profile_json: str) -> None:
+    """ProfileOutput JSON を DB に永続化する（UPSERT）。
+
+    Args:
+      profile_id: プロファイル識別子
+      profile_json: ProfileOutput の JSON 文字列
+    """
+    now = datetime.now(timezone.utc).isoformat()
+    async with aiosqlite.connect(self._db_path) as db:
+      await db.execute(
+        """
+        INSERT INTO profiles (profile_id, profile_json, created_at)
+        VALUES (?, ?, ?)
+        ON CONFLICT(profile_id) DO UPDATE SET profile_json = excluded.profile_json
+        """,
+        (profile_id, profile_json, now),
+      )
+      await db.commit()
+    logger.debug("Profile saved to DB: profile_id=%s", profile_id)
+
+  async def get_profile_json(self, profile_id: str) -> str | None:
+    """DB からプロファイル JSON を取得する。
+
+    Args:
+      profile_id: 取得対象のプロファイル ID
+
+    Returns:
+      JSON 文字列。存在しない場合は None。
+    """
+    async with aiosqlite.connect(self._db_path) as db:
+      async with db.execute(
+        "SELECT profile_json FROM profiles WHERE profile_id = ?",
+        (profile_id,),
+      ) as cursor:
+        row = await cursor.fetchone()
+        return row[0] if row else None
+
+  async def list_profile_ids(self) -> list[str]:
+    """DB に保存されている全プロファイル ID を返す。"""
+    async with aiosqlite.connect(self._db_path) as db:
+      async with db.execute("SELECT profile_id FROM profiles") as cursor:
+        rows = await cursor.fetchall()
+        return [row[0] for row in rows]
 
   async def create(self, profile_id: str, display_name: str) -> AgentRecord:
     """新規エージェントペルソナを作成する。
