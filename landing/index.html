@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Profiler — あなたの分身をつくる</title>
+  <meta name="description" content="47の質問で思考特性を解析し、パーソナライズされたAIエージェントを生成。分身同士の対話から新たな自分を発見する。" />
+
+  <!-- OGP -->
+  <meta property="og:title" content="Agent Profiler" />
+  <meta property="og:description" content="あなたの分身をつくる。動かす。観察する。" />
+  <meta property="og:type" content="website" />
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #09090b;
+      --fg: #fafafa;
+      --muted: #a1a1aa;
+      --surface: #18181b;
+      --border: #27272a;
+      --primary: #6d28d9;
+      --accent: #a78bfa;
+      --cyan: #06b6d4;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* === Ambient === */
+    .ambient {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+    }
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      animation: float 8s ease-in-out infinite;
+    }
+    .orb-1 { top: -10%; left: 15%; width: 600px; height: 600px; background: rgba(109, 40, 217, 0.12); }
+    .orb-2 { bottom: -5%; right: 10%; width: 400px; height: 400px; background: rgba(6, 182, 212, 0.08); animation-delay: -3s; }
+    .orb-3 { top: 40%; left: 55%; width: 250px; height: 250px; background: rgba(236, 72, 153, 0.06); animation-delay: -5s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+
+    /* === Layout === */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+
+    /* === Nav === */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 1rem 0;
+      background: rgba(24, 24, 27, 0.6);
+      backdrop-filter: blur(16px) saturate(180%);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    nav .inner { display: flex; align-items: center; justify-content: space-between; }
+    .brand {
+      font-size: 0.9rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary), var(--accent), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .nav-link {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 0.4rem 1rem;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .nav-link:hover { color: var(--fg); background: rgba(255,255,255,0.05); }
+
+    /* === Hero === */
+    .hero {
+      min-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 4rem 0;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.3rem 0.8rem;
+      border-radius: 100px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 2.5rem;
+    }
+    .badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    h1 {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.5rem;
+    }
+    .gradient {
+      background: linear-gradient(135deg, var(--primary), var(--accent), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 500px;
+      line-height: 1.7;
+      margin-bottom: 2.5rem;
+    }
+
+    .cta-group { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    .btn-primary {
+      padding: 0.9rem 2rem;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: 0 0 30px rgba(109,40,217,0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover { transform: scale(1.03); box-shadow: 0 0 50px rgba(109,40,217,0.3); }
+    .btn-secondary {
+      padding: 0.9rem 2rem;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--fg);
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.08); }
+
+    /* === Features === */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      padding: 6rem 0;
+    }
+    .feature-card {
+      background: rgba(24, 24, 27, 0.6);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 2rem;
+      transition: all 0.3s;
+    }
+    .feature-card:hover {
+      border-color: rgba(109, 40, 217, 0.2);
+      box-shadow: 0 0 30px rgba(109, 40, 217, 0.08);
+      transform: translateY(-2px);
+    }
+    .feature-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(109,40,217,0.2), rgba(167,139,250,0.1));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      margin-bottom: 1.25rem;
+    }
+    .feature-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .feature-card p { font-size: 0.8rem; color: var(--muted); line-height: 1.6; }
+
+    /* === How it works === */
+    .how-section { padding: 4rem 0 6rem; text-align: center; }
+    .how-section h2 { font-size: 2rem; font-weight: 700; margin-bottom: 3rem; letter-spacing: -0.02em; }
+    .steps { display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap; }
+    .step {
+      flex: 1;
+      min-width: 200px;
+      max-width: 260px;
+      text-align: center;
+    }
+    .step-number {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin: 0 auto 1rem;
+    }
+    .step h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .step p { font-size: 0.75rem; color: var(--muted); line-height: 1.6; }
+
+    /* === Footer === */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 0;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    /* === Mobile === */
+    @media (max-width: 640px) {
+      .hero { padding: 3rem 0; min-height: 80vh; }
+      .features { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <nav>
+    <div class="container inner">
+      <span class="brand">Agent Profiler</span>
+      <div>
+        <a href="https://github.com/nekotoiruka/AgentProfiler" class="nav-link" target="_blank">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero container">
+    <div class="badge">AI-Powered Agent Creation</div>
+    <h1><span class="gradient">あなたの分身</span>を<br>つくる。動かす。観察する。</h1>
+    <p>47の質問であなたの思考特性・価値観・意思決定パターンを解析。パーソナライズされたAIエージェントを生成し、分身同士の対話から新たな自分を発見する。</p>
+    <div class="cta-group">
+      <a href="https://github.com/nekotoiruka/AgentProfiler" class="btn-primary">GitHub で見る →</a>
+      <a href="#features" class="btn-secondary">機能を見る</a>
+    </div>
+  </section>
+
+  <section id="features" class="container features">
+    <div class="feature-card">
+      <div class="feature-icon">◆</div>
+      <h3>4軸思考特性プロファイリング</h3>
+      <p>独自の4軸モデルで思考傾向をスコアリング。LLM による自由記述分析と組み合わせ、高精度な性格プロファイルを生成。</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">◇</div>
+      <h3>分身エージェント生成</h3>
+      <p>プロファイル JSON から AI 分身を即座に生成。3層コンテキストアーキテクチャで人格・スキル・知識を階層管理。</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">△</div>
+      <h3>マルチエージェント議論</h3>
+      <p>2〜6体の分身がテーマについて自律的に議論。異なる視点からの洞察をリアルタイムで観察。</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">▽</div>
+      <h3>セマンティックキャッシュ</h3>
+      <p>類似発話を検知し LLM コストを削減。ハイブリッドルーティングで軽量クエリは SLM へ自動振り分け。</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">○</div>
+      <h3>Agent Pack Zip エクスポート</h3>
+      <p>VSCode / GitHub Copilot / Claude Code 向けの構成資産を自動生成。解凍して配置するだけで分身が動く。</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">●</div>
+      <h3>相性診断 & レコメンド</h3>
+      <p>4軸ベクトルの Cosine Similarity で分身間の相性を診断。議論パートナーを自動マッチング。</p>
+    </div>
+  </section>
+
+  <section class="how-section container">
+    <h2>使い方</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <h4>質問に答える</h4>
+        <p>47問の質問に回答。4択 + 自由記述であなたの思考パターンを多角的に解析。</p>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <h4>プロファイル生成</h4>
+        <p>4軸スコア + 意思決定スタイル + Do Not List が自動生成され、AI エージェントの Base OS となる。</p>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <h4>分身と対話</h4>
+        <p>生成されたエージェントとチャット。複数体を集めてディスカッションさせることも可能。</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>Agent Profiler — <a href="https://github.com/nekotoiruka/AgentProfiler">Open Source (AGPLv3)</a> by nekotoiruka</p>
+    </div>
+  </footer>
+</body>
+</html>
