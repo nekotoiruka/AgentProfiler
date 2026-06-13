@@ -23,8 +23,22 @@ const activeTab = ref<Tab>('agents')
 // --- Agents ---
 const { agents, loading: agentsLoading, listAgents, createAgent, deleteAgent } = useAgents()
 const newAgentName = ref('')
-const newAgentProfileId = ref('')
 const createError = ref<string | null>(null)
+
+// --- Profiles ---
+const profiles = ref<{ profile_id: string }[]>([])
+const selectedProfileId = ref<string | null>(null)
+
+async function loadProfiles() {
+  try {
+    profiles.value = await apiFetch<{ profile_id: string }[]>('/v1/evolution/profiles')
+    if (profiles.value.length === 1) {
+      selectedProfileId.value = profiles.value[0].profile_id
+    }
+  } catch {
+    // Evolution 未初期化時は空
+  }
+}
 
 // --- Chat ---
 const selectedAgent = ref<Agent | null>(null)
@@ -46,13 +60,12 @@ const hasAgents = computed(() => agents.value.length > 0)
 async function handleCreateAgent() {
   createError.value = null
   const name = newAgentName.value.trim()
-  const pid = newAgentProfileId.value.trim()
-  if (!name || !pid) return
-  const agent = await createAgent(pid, name)
+  if (!name || !selectedProfileId.value) return
+  const agent = await createAgent(selectedProfileId.value, name)
   if (agent) {
     newAgentName.value = ''
   } else {
-    createError.value = 'プロファイルが登録されていません。質問フローを完了してください。'
+    createError.value = '作成に失敗しました。プロファイルが正しく登録されているか確認してください。'
   }
 }
 
@@ -76,11 +89,13 @@ function handleStartDiscussion(agentIds: string[], theme: string) {
 onMounted(async () => {
   // 全エージェントを自動取得（プロファイル指定不要）
   await listAgents()
+  // 登録済みプロファイル一覧を取得
+  await loadProfiles()
 
-  // URL パラメータで profile_id が指定されていれば保持
+  // URL パラメータで profile_id が指定されていれば自動選択
   const params = new URLSearchParams(window.location.search)
   const pid = params.get('profile_id')
-  if (pid) newAgentProfileId.value = pid
+  if (pid) selectedProfileId.value = pid
 })
 </script>
 
@@ -113,12 +128,17 @@ onMounted(async () => {
       <!-- 新規作成 -->
       <div class="ev-create">
         <h2 class="ev-section__title">新しいエージェントを作成</h2>
-        <div class="ev-create__form">
-          <input
-            v-model="newAgentProfileId"
-            class="ev-input ev-input--sm"
-            placeholder="Profile ID (例: prof_000001)"
-          />
+        <div v-if="profiles.length === 0" class="ev-hint">
+          プロファイルが登録されていません。
+          <router-link to="/survey" class="ev-link">質問フローを完了</router-link>してください。
+        </div>
+        <div v-else class="ev-create__form">
+          <select v-model="selectedProfileId" class="ev-select">
+            <option :value="null" disabled>プロファイルを選択</option>
+            <option v-for="p in profiles" :key="p.profile_id" :value="p.profile_id">
+              {{ p.profile_id }}
+            </option>
+          </select>
           <input
             v-model="newAgentName"
             class="ev-input"
@@ -127,7 +147,7 @@ onMounted(async () => {
           />
           <button
             class="ev-btn ev-btn--primary"
-            :disabled="!newAgentName.trim() || !newAgentProfileId.trim()"
+            :disabled="!newAgentName.trim() || !selectedProfileId"
             @click="handleCreateAgent"
           >
             作成
@@ -314,6 +334,15 @@ onMounted(async () => {
 }
 .ev-input--sm { max-width: 180px; }
 .ev-input:focus { border-color: #7c5cbf; outline: none; }
+.ev-select {
+  padding: 0.6rem 0.875rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: white;
+  min-width: 160px;
+}
+.ev-link { color: #6d28d9; text-decoration: underline; }
 .ev-error { font-size: 0.8rem; color: #dc2626; margin-top: 0.5rem; }
 
 /* --- Button --- */

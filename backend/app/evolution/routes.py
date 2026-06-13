@@ -89,6 +89,18 @@ def _require_profile_loaded(profile_id: str) -> None:
     )
 
 
+@evolution_router.get("/profiles")
+async def list_profiles() -> list[dict]:
+  """登録済みプロファイル一覧を返す。
+
+  フロントエンドのドロップダウン表示用。profile_id のみ返す。
+  """
+  _require_services()
+  agent_manager: AgentManager = get_service("agent_manager")  # type: ignore
+  profile_ids = await agent_manager.list_profile_ids()
+  return [{"profile_id": pid} for pid in profile_ids]
+
+
 @evolution_router.post("/profiles", response_model=ProfileLoadResponse)
 async def load_profile(profile: ProfileOutput) -> ProfileLoadResponse:
   """ProfileOutput をロードし、3層コンテキストを初期化する。
