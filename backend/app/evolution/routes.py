@@ -12,6 +12,10 @@
 - GET /agents/{agent_id}/package — Agent Pack Zip ダウンロード
 - POST /agents/{agent_id}/chat — チャットメッセージ送信 + レスポンス (SSE 対応)
 - GET /agents/{agent_id}/chat/{thread_id} — 会話履歴取得
+- POST /discussions — マルチエージェント議論セッション開始 (SSE 対応)
+- GET /discussions/{discussion_id} — 議論ターン履歴取得
+- GET /compatibility/{agent_id_1}/{agent_id_2} — 2エージェント間の相性診断
+- GET /agents/{agent_id}/recommendations — カテゴリ別レコメンド
 """
 
 import logging
@@ -22,8 +26,10 @@ from fastapi.responses import Response, StreamingResponse
 
 from app.evolution.agent_manager import AgentManager
 from app.evolution.chat import ChatService
+from app.evolution.compatibility import CompatibilityEngine
 from app.evolution.context_layer_manager import ContextLayerManager
 from app.evolution.dependencies import get_service
+from app.evolution.discussion_engine import DiscussionEngine
 from app.evolution.hybrid_search import HybridSearchEngine
 from app.evolution.models import (
   AgentResponse,
@@ -37,6 +43,7 @@ from app.evolution.models import (
   ProfileLoadResponse,
   ProfileValidationError,
   SearchResultItem,
+  StartDiscussionRequest,
   UpdateAgentRequest,
   validate_profile_for_evolution,
 )
@@ -597,3 +604,279 @@ async def get_chat_history(agent_id: str, thread_id: str) -> list[dict]:
   chat_service: ChatService = get_service("chat_service")  # type: ignore
   history = await chat_service.get_history(thread_id)
   return history
+
+
+# --- Discussion エンドポイント ---
+
+
+@evolution_router.post("/discussions", response_model=None)
+async def start_discussion(
+  request: StartDiscussionRequest, raw_request: Request
+) -> dict | StreamingResponse:
+  """マルチエージェント議論セッションを開始する。
+
+  Accept: text/event-stream ヘッダー指定時は SSE ストリーミングで
+  各ターンを逐次配信する。通常リクエスト時は全ターン完了後に
+  JSON レスポンスを返却する。
+
+  Validates: Requirements 18.1, 18.7, 18.8
+  """
+  _require_services()
+
+  discussion_engine: DiscussionEngine = get_service("discussion_engine")  # type: ignore
+  agent_manager: AgentManager = get_service("agent_manager")  # type: ignore
+
+  # エージェントの存在・アクティブ状態を検証
+  invalid_ids: list[str] = []
+  for agent_id in request.agent_ids:
+    record = await agent_manager.get(agent_id)
+    if record is None or not record.is_active:
+      invalid_ids.append(agent_id)
+
+  if invalid_ids:
+    raise HTTPException(
+      status_code=422,
+      detail=f"Invalid or inactive agent_ids: {invalid_ids}",
+    )
+
+  # Accept ヘッダーで SSE ストリーミング判定
+  accept = raw_request.headers.get("accept", "")
+  if "text/event-stream" in accept:
+    return StreamingResponse(
+      discussion_engine.stream_discussion(
+        agent_ids=request.agent_ids,
+        theme=request.theme,
+        max_turns_per_agent=request.max_turns_per_agent,
+      ),
+      media_type="text/event-stream",
+    )
+
+  # 通常 JSON レスポンス: 全ターンを実行して結果を返す
+  discussion_id = await discussion_engine.start_discussion(
+    agent_ids=request.agent_ids,
+    theme=request.theme,
+  )
+
+  turns: list[dict] = []
+  async for turn in discussion_engine.run_turns(
+    discussion_id=discussion_id,
+    agent_ids=request.agent_ids,
+    theme=request.theme,
+    max_turns_per_agent=request.max_turns_per_agent,
+  ):
+    turns.append({
+      "turn_number": turn.turn_number,
+      "agent_id": turn.agent_id,
+      "display_name": turn.display_name,
+      "content": turn.content,
+      "timestamp": turn.timestamp,
+    })
+
+  return {
+    "discussion_id": discussion_id,
+    "theme": request.theme,
+    "agent_ids": request.agent_ids,
+    "turns": turns,
+  }
+
+
+@evolution_router.get("/discussions/{discussion_id}")
+async def get_discussion_history(discussion_id: str) -> list[dict]:
+  """議論の全ターン履歴を取得する。
+
+  turn_number 昇順で全発話を返却する。
+
+  Validates: Requirements 18.1, 18.7
+  """
+  _require_services()
+
+  discussion_engine: DiscussionEngine = get_service("discussion_engine")  # type: ignore
+  history = await discussion_engine.get_history(discussion_id)
+  return history
+
+
+# --- Compatibility & Recommendation エンドポイント ---
+
+
+def _get_axes_from_agent_profile(profile_id: str) -> list[float]:
+  """エージェントの profile_id から4軸スコアをリストとして取得する。
+
+  ContextLayerManager から BaseOS を取得し、
+  NormalizedScores を [E/I, S/N, T/F, J/P] のリストに変換する。
+
+  Args:
+    profile_id: プロファイル識別子
+
+  Returns:
+    4軸スコアのリスト [0.0-1.0] × 4
+
+  Raises:
+    KeyError: profile_id が未ロードの場合
+  """
+  clm: ContextLayerManager = get_service("context_layer_manager")  # type: ignore
+  base_os = clm.get_base_os(profile_id)
+  axes = base_os.axes
+  return [
+    axes.extroverted_introverted,
+    axes.sensing_intuition,
+    axes.thinking_feeling,
+    axes.judging_perceiving,
+  ]
+
+
+@evolution_router.get("/compatibility/{agent_id_1}/{agent_id_2}")
+async def get_compatibility(agent_id_1: str, agent_id_2: str) -> dict:
+  """2エージェント間の相性診断レポートを返す。
+
+  両エージェントの4軸パラメータから Cosine Similarity と
+  Complementarity を算出し、分類・推奨モードを含むレポートを返却する。
+
+  Validates: Requirements 19.5, 19.6
+  """
+  _require_services()
+
+  agent_manager: AgentManager = get_service("agent_manager")  # type: ignore
+  compatibility_engine: CompatibilityEngine = get_service("compatibility_engine")  # type: ignore
+
+  # 両エージェントの存在・アクティブ状態を検証
+  record_1 = await agent_manager.get(agent_id_1)
+  if record_1 is None or not record_1.is_active:
+    raise HTTPException(
+      status_code=404,
+      detail=f"Agent '{agent_id_1}' not found or not active",
+    )
+
+  record_2 = await agent_manager.get(agent_id_2)
+  if record_2 is None or not record_2.is_active:
+    raise HTTPException(
+      status_code=404,
+      detail=f"Agent '{agent_id_2}' not found or not active",
+    )
+
+  # 各エージェントの4軸スコアを取得
+  try:
+    axes_1 = _get_axes_from_agent_profile(record_1.profile_id)
+  except KeyError:
+    raise HTTPException(
+      status_code=404,
+      detail=f"Profile '{record_1.profile_id}' for agent '{agent_id_1}' is not loaded",
+    )
+
+  try:
+    axes_2 = _get_axes_from_agent_profile(record_2.profile_id)
+  except KeyError:
+    raise HTTPException(
+      status_code=404,
+      detail=f"Profile '{record_2.profile_id}' for agent '{agent_id_2}' is not loaded",
+    )
+
+  # 相性レポート生成
+  report = compatibility_engine.compute_compatibility(axes_1, axes_2)
+
+  return {
+    "agent_id_1": agent_id_1,
+    "agent_id_2": agent_id_2,
+    "overall_score": report.overall_score,
+    "cosine_similarity": report.cosine_similarity,
+    "complementarity_score": report.complementarity_score,
+    "per_axis_comparison": report.per_axis_comparison,
+    "classification": report.classification.value,
+    "relationship_type": report.relationship_type,
+    "reason": report.reason,
+    "recommended_interaction_mode": report.recommended_interaction_mode,
+  }
+
+
+@evolution_router.get("/agents/{agent_id}/recommendations")
+async def get_recommendations(agent_id: str) -> dict:
+  """カテゴリ別レコメンドを返す。
+
+  指定エージェントと全アクティブエージェントの相性を比較し、
+  most_heated_debate (相補性上位) と business_partner (類似度上位) の
+  2カテゴリ × 最大3件のレコメンドを返却する。
+
+  Validates: Requirements 20.4, 20.5
+  """
+  _require_services()
+
+  agent_manager: AgentManager = get_service("agent_manager")  # type: ignore
+  compatibility_engine: CompatibilityEngine = get_service("compatibility_engine")  # type: ignore
+
+  # ソースエージェントの存在・アクティブ状態を検証
+  record = await agent_manager.get(agent_id)
+  if record is None or not record.is_active:
+    raise HTTPException(
+      status_code=404,
+      detail=f"Agent '{agent_id}' not found or not active",
+    )
+
+  # 全アクティブエージェントを取得
+  all_records = await agent_manager.list_all_active()
+
+  # アクティブエージェントが2未満の場合は空レコメンド + メッセージ
+  if len(all_records) < 2:
+    return {
+      "agent_id": agent_id,
+      "most_heated_debate": [],
+      "business_partner": [],
+      "message": "レコメンドには2体以上のアクティブエージェントが必要です",
+    }
+
+  # 各エージェントの axes を収集（プロファイル未ロード分はスキップ）
+  all_agents: list[dict] = []
+  for r in all_records:
+    try:
+      axes = _get_axes_from_agent_profile(r.profile_id)
+      all_agents.append({
+        "agent_id": r.agent_id,
+        "axes": axes,
+        "display_name": r.display_name,
+      })
+    except KeyError:
+      # プロファイル未ロードのエージェントはスキップ
+      logger.debug(
+        "Skipping agent '%s': profile '%s' not loaded",
+        r.agent_id,
+        r.profile_id,
+      )
+      continue
+
+  # axes 収集後に2体未満の場合
+  if len(all_agents) < 2:
+    return {
+      "agent_id": agent_id,
+      "most_heated_debate": [],
+      "business_partner": [],
+      "message": "レコメンドには2体以上のアクティブエージェントが必要です",
+    }
+
+  # レコメンド生成
+  recommendations = await compatibility_engine.recommend(
+    source_agent_id=agent_id,
+    all_agents=all_agents,
+  )
+
+  # dataclass → dict 変換
+  result: dict = {
+    "agent_id": agent_id,
+    "most_heated_debate": [
+      {
+        "agent_id": rec.agent_id,
+        "display_name": rec.display_name,
+        "score": rec.score,
+        "explanation": rec.explanation,
+      }
+      for rec in recommendations["most_heated_debate"]
+    ],
+    "business_partner": [
+      {
+        "agent_id": rec.agent_id,
+        "display_name": rec.display_name,
+        "score": rec.score,
+        "explanation": rec.explanation,
+      }
+      for rec in recommendations["business_partner"]
+    ],
+  }
+
+  return result

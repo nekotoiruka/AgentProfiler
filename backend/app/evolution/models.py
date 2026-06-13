@@ -160,6 +160,22 @@ class ChatMessageRequest(BaseModel):
   thread_id: str | None = None
 
 
+# --- Discussion モデル ---
+
+
+class StartDiscussionRequest(BaseModel):
+  """マルチエージェント議論開始リクエスト
+
+  agent_ids: 参加エージェント ID リスト (2〜6)
+  theme: 議論テーマ
+  max_turns_per_agent: エージェント当たりの最大ターン数 (1〜50, デフォルト10)
+  """
+
+  agent_ids: list[str] = Field(..., min_length=2, max_length=6)
+  theme: str = Field(..., min_length=1)
+  max_turns_per_agent: int = Field(default=10, ge=1, le=50)
+
+
 
 # --- Evolution プロファイルバリデーション ---
 

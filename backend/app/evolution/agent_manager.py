@@ -180,6 +180,31 @@ class AgentManager:
           for row in rows
         ]
 
+  async def list_all_active(self) -> list[AgentRecord]:
+    """全プロファイルの有効なエージェント一覧を返す。
+
+    Returns:
+      is_active=True の全エージェントレコードのリスト（作成日時昇順）
+    """
+    async with aiosqlite.connect(self._db_path) as db:
+      db.row_factory = aiosqlite.Row
+      async with db.execute(
+        "SELECT agent_id, profile_id, display_name, created_at, is_active "
+        "FROM agents WHERE is_active = 1 "
+        "ORDER BY created_at ASC",
+      ) as cursor:
+        rows = await cursor.fetchall()
+        return [
+          AgentRecord(
+            agent_id=row["agent_id"],
+            profile_id=row["profile_id"],
+            display_name=row["display_name"],
+            created_at=row["created_at"],
+            is_active=bool(row["is_active"]),
+          )
+          for row in rows
+        ]
+
   async def update_display_name(
     self, agent_id: str, display_name: str
   ) -> AgentRecord:

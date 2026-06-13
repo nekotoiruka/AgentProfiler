@@ -10,8 +10,10 @@ from pathlib import Path
 
 from app.evolution.agent_manager import AgentManager
 from app.evolution.chat import ChatService
+from app.evolution.compatibility import CompatibilityEngine
 from app.evolution.config import EvolutionSettings
 from app.evolution.context_layer_manager import ContextLayerManager
+from app.evolution.discussion_engine import DiscussionEngine
 from app.evolution.embedding_client import EmbeddingClient
 from app.evolution.package_generator import PackageGenerator
 from app.evolution.prompt_engine import PromptEngine
@@ -106,6 +108,18 @@ async def init_evolution_services() -> None:
   )
   await chat_service.init_db()
 
+  # Discussion Engine (マルチエージェント・ターン制議論)
+  discussion_engine = DiscussionEngine(
+    db_path=evolution_db_path,
+    routing_engine=routing_engine,
+    context_layer_manager=context_layer_manager,
+    agent_manager=agent_manager,
+  )
+  await discussion_engine.init_db()
+
+  # Compatibility Engine (4軸パラメータ相性診断・レコメンド)
+  compatibility_engine = CompatibilityEngine()
+
   # サービスコンテナに登録
   _services["settings"] = settings
   _services["embedding_client"] = embedding_client
@@ -117,6 +131,8 @@ async def init_evolution_services() -> None:
   _services["agent_manager"] = agent_manager
   _services["package_generator"] = package_generator
   _services["chat_service"] = chat_service
+  _services["discussion_engine"] = discussion_engine
+  _services["compatibility_engine"] = compatibility_engine
 
   logger.info("Evolution services initialized successfully")
 
@@ -128,7 +144,7 @@ def get_service(name: str) -> object | None:
     name: サービス名 (settings, embedding_client, semantic_retriever,
           context_layer_manager, prompt_engine, routing_engine,
           semantic_cache, agent_manager, package_generator,
-          chat_service)
+          chat_service, discussion_engine, compatibility_engine)
 
   Returns:
     登録済みサービスインスタンス。未初期化の場合は None。
