@@ -15,7 +15,7 @@ const navLinks = [
 <template>
   <div id="app-root" class="min-h-screen font-sans">
     <!-- Nav -->
-    <nav class="sticky top-0 z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-zinc-200 dark:border-white/5">
+    <nav class="sticky top-0 z-50 bg-white backdrop-blur-xl border-b border-zinc-200">
       <div class="max-w-[1200px] mx-auto flex items-center justify-between px-6 py-3">
         <router-link to="/" class="text-sm font-bold tracking-tight text-violet-700">
           Agent Profiler
@@ -28,8 +28,8 @@ const navLinks = [
             :class="[
               'px-4 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
               currentPath === link.to
-                ? 'bg-violet-100 dark:bg-primary/15 text-violet-700 dark:text-accent'
-                : 'text-zinc-500 hover:text-zinc-900 dark:text-muted-foreground dark:hover:text-foreground hover:bg-zinc-100 dark:hover:bg-surface-hover'
+                ? 'bg-violet-100 text-violet-700'
+                : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
             ]"
           >
             {{ link.label }}

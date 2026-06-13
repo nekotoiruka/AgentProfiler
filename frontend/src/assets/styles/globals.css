@@ -68,6 +68,8 @@
 /* === Base resets for the app === */
 @layer base {
   body {
+    background-color: #ffffff;
+    color: #1a1a2e;
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
