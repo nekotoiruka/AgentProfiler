@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+/* === Agent Profiler — Custom Theme === */
+@theme {
+  --color-primary: #6d28d9;
+  --color-primary-foreground: #ffffff;
+  --color-primary-hover: #5b21b6;
+  --color-primary-muted: #ede9fe;
+
+  --color-background: #09090b;
+  --color-foreground: #fafafa;
+  --color-surface: #18181b;
+  --color-surface-hover: #27272a;
+  --color-muted: #27272a;
+  --color-muted-foreground: #a1a1aa;
+  --color-border: #27272a;
+  --color-card: #18181b;
+  --color-accent: #a78bfa;
+  --color-accent-foreground: #09090b;
+
+  --color-gradient-start: #6d28d9;
+  --color-gradient-mid: #a78bfa;
+  --color-gradient-end: #06b6d4;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* === Glass morphism utility === */
+@utility glass {
+  background: rgba(24, 24, 27, 0.7);
+  backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* === Gradient text utility === */
+@utility gradient-text {
+  background: linear-gradient(135deg, var(--color-gradient-start), var(--color-gradient-mid), var(--color-gradient-end));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* === Glow utility === */
+@utility glow {
+  box-shadow: 0 0 20px rgba(109, 40, 217, 0.15), 0 0 60px rgba(109, 40, 217, 0.05);
+}
+
+@utility glow-sm {
+  box-shadow: 0 0 10px rgba(109, 40, 217, 0.1);
+}
+
+/* === Animate === */
+@utility animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+/* === Base resets for the app === */
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
