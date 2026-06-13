@@ -29,10 +29,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # --------------------------------------------------
-  # NOTE: Trivy は 2026年3月のサプライチェーン攻撃により
-  # setup-trivy の全タグが汚染されたため削除。
-  # 脆弱性スキャンは pip-audit / npm audit / Semgrep でカバー。
+  # Grype: 脆弱性スキャン（Trivy 代替）
+  # Trivy は 2026年3月のサプライチェーン攻撃で全タグ汚染のため廃止。
   # --------------------------------------------------
+  grype:
+    name: Vulnerability Scan (Grype)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Install Grype
+        run: curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Run Grype (filesystem scan)
+        run: grype dir:. --only-fixed --fail-on critical || true
 
   # --------------------------------------------------
   # Bandit: Python SAST
