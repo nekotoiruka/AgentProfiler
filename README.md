@@ -149,19 +149,25 @@ cd backend
 uv sync --all-extras
 uv run uvicorn app.main:app --port 8001
 
-# 3. プロファイルロード → チャット開始
-curl -X POST http://localhost:8001/api/v1/evolution/profiles -H "Content-Type: application/json" \
-  -d '{"profile_id":"prof_000001","base_os":{"axes":{"extroverted_introverted":0.7,"sensing_intuition":0.4,"thinking_feeling":0.8,"judging_perceiving":0.3},"decision_style":"analytical","do_not_list":["rush"]},"lexical_tags":["python","fastapi","vue","docker","ts"],"semantic_contexts":{"problem_solving":"段階的に分析"},"context_layers":{"base_os":1,"lexical_tags":2,"semantic_contexts":3}}'
-
-curl -X POST http://localhost:8001/api/v1/evolution/agents -H "Content-Type: application/json" \
-  -d '{"profile_id":"prof_000001","display_name":"分身1号"}'
+# 3. フロントエンドからアクセス
+cd frontend && npm run dev
+# → http://localhost:5173/evolution
 ```
+
+初回のみ Swagger UI (`http://localhost:8001/docs`) で `POST /api/v1/evolution/profiles` にプロファイル JSON を投げてください。以降はサーバー再起動しても DB から自動復元されるため、手動ロードは不要です。
+
+### フロントエンド画面
+
+| URL | 画面 |
+|-----|------|
+| http://localhost:5173/evolution | Evolution メイン（設定/チャット/ディスカッション） |
+| http://localhost:5173/survey | 質問フロー（プロファイル生成） |
+| http://localhost:5173/results | 診断結果ダッシュボード |
 
 ### 既知の残件
 
-- Frontend コンポーネントは実装済みだが、ルーティング (router/index.ts) への統合がまだ
+- 質問フロー完了 → Evolution に自動連携する導線が未実装（手動でプロファイルロードが必要）
 - MCP Server の独立起動スクリプト (CLI エントリポイント) が未作成
-- 実 LLM (OpenAI / ollama) との E2E テストは未実施（全テストはモック）
 - DB スキーマ変更時のマイグレーションツールがない（現状は自動 CREATE IF NOT EXISTS）
 
 ---
