@@ -64,7 +64,7 @@ Agent Profiler が生成した ProfileOutput JSON を入力とし、AIエージ�
     - **Property 4: Prompt token limit invariant**
     - **Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5, 1.6**
 
-- [ ] 4. Checkpoint - 基盤コンポーネント確認
+- [x] 4. Checkpoint - 基盤コンポーネント確認
   - Ensure all tests pass, ask the user if questions arise.
 
 - [x] 5. Lexical Retriever
@@ -108,7 +108,7 @@ Agent Profiler が生成した ProfileOutput JSON を入力とし、AIエージ�
     - **Property 9: Hybrid weighting influence**
     - **Validates: Requirements 7.1, 7.2, 7.3, 7.4**
 
-- [ ] 8. Checkpoint - 検索レイヤー確認
+- [x] 8. Checkpoint - 検索レイヤー確認
   - Ensure all tests pass, ask the user if questions arise.
 
 - [x] 9. Context Layer Manager
@@ -159,7 +159,7 @@ Agent Profiler が生成した ProfileOutput JSON を入力とし、AIエージ�
     - **Property 13: Routing classification determinism**
     - **Validates: Requirements 9.1, 9.4**
 
-- [ ] 12. Checkpoint - コアエンジン確認
+- [x] 12. Checkpoint - コアエンジン確認
   - Ensure all tests pass, ask the user if questions arise.
 
 - [x] 13. MCP Server
@@ -203,7 +203,7 @@ Agent Profiler が生成した ProfileOutput JSON を入力とし、AIエージ�
     - dev dependencies に `hypothesis` (既存), `pytest` (既存) を確認
     - _Requirements: 13.1_
 
-- [ ] 16. Final checkpoint - 全体統合確認
+- [x] 16. Final checkpoint - 全体統合確認
   - Ensure all tests pass, ask the user if questions arise.
 
 - [x] 17. Agent Manager + DB テーブル
@@ -260,7 +260,7 @@ Agent Profiler が生成した ProfileOutput JSON を入力とし、AIエージ�
     - **Property 27: Chat turn persistence**
     - **Validates: Requirements 17.3, 17.4, 17.6**
 
-- [ ] 19. Checkpoint - バックエンド基盤確認
+- [x] 19. Checkpoint - バックエンド基盤確認
   - Ensure all tests pass, ask the user if questions arise.
 
 - [x] 20. Package Generator + Zip ダウンロード
@@ -374,7 +374,7 @@ Agent Profiler が生成した ProfileOutput JSON を入力とし、AIエージ�
     - **Property 36: Export format equivalence**
     - **Validates: Requirements 23.2, 23.3, 23.4, 23.5**
 
-- [ ] 24. Checkpoint - バックエンド Phase 2/3 確認
+- [x] 24. Checkpoint - バックエンド Phase 2/3 確認
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 25. Frontend: AgentList + ChatThread
@@ -430,7 +430,7 @@ Agent Profiler が生成した ProfileOutput JSON を入力とし、AIエージ�
     - Vue 3 Composition API + TypeScript
     - _Requirements: 22.3, 22.4, 22.5, 22.6_
 
-- [ ] 27. Final checkpoint - Phase 2/3 全体統合確認
+- [x] 27. Final checkpoint - Phase 2/3 全体統合確認
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
