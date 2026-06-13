@@ -385,15 +385,22 @@ async def create_agent(request: CreateAgentRequest) -> AgentResponse:
 
 
 @evolution_router.get("/agents", response_model=list[AgentResponse])
-async def list_agents(profile_id: str) -> list[AgentResponse]:
-  """指定プロファイルの有効エージェント一覧を取得する。
+async def list_agents(profile_id: str | None = None) -> list[AgentResponse]:
+  """有効エージェント一覧を取得する。
+
+  profile_id を指定した場合はそのプロファイルのエージェントのみ返す。
+  省略した場合は全アクティブエージェントを返す。
 
   Validates: Requirements 16.7
   """
   _require_services()
 
   agent_manager: AgentManager = get_service("agent_manager")  # type: ignore
-  records = await agent_manager.list_active(profile_id)
+
+  if profile_id:
+    records = await agent_manager.list_active(profile_id)
+  else:
+    records = await agent_manager.list_all_active()
 
   return [
     AgentResponse(

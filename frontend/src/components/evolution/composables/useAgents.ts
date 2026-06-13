@@ -23,13 +23,14 @@ export function useAgents() {
   const error = ref<string | null>(null)
 
   /** 指定 profile_id に紐づくアクティブエージェント一覧を取得 */
-  async function listAgents(profileId: string) {
+  async function listAgents(profileId?: string) {
     loading.value = true
     error.value = null
     try {
-      agents.value = await apiFetch<Agent[]>(
-        `/v1/evolution/agents?profile_id=${profileId}`,
-      )
+      const url = profileId
+        ? `/v1/evolution/agents?profile_id=${profileId}`
+        : '/v1/evolution/agents'
+      agents.value = await apiFetch<Agent[]>(url)
     } catch (e: any) {
       error.value = e.message
     } finally {
