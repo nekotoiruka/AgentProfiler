@@ -1,22 +1,13 @@
 @import "tailwindcss";
 
-/* === Agent Profiler — Custom Theme === */
+/* === Agent Profiler — Dual Theme (Light / Dark) ===
+   <html> 要素に .dark クラスがあればダーク、なければライト */
+
 @theme {
   --color-primary: #6d28d9;
   --color-primary-foreground: #ffffff;
   --color-primary-hover: #5b21b6;
   --color-primary-muted: #ede9fe;
-
-  --color-background: #09090b;
-  --color-foreground: #fafafa;
-  --color-surface: #18181b;
-  --color-surface-hover: #27272a;
-  --color-muted: #27272a;
-  --color-muted-foreground: #a1a1aa;
-  --color-border: #27272a;
-  --color-card: #18181b;
-  --color-accent: #a78bfa;
-  --color-accent-foreground: #09090b;
 
   --color-gradient-start: #6d28d9;
   --color-gradient-mid: #a78bfa;
@@ -31,11 +22,39 @@
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
+/* === Light theme (default) === */
+:root {
+  --color-background: #ffffff;
+  --color-foreground: #09090b;
+  --color-surface: #f4f4f5;
+  --color-surface-hover: #e4e4e7;
+  --color-muted: #f4f4f5;
+  --color-muted-foreground: #71717a;
+  --color-border: #e4e4e7;
+  --color-card: #ffffff;
+  --color-accent: #6d28d9;
+  --color-accent-foreground: #ffffff;
+}
+
+/* === Dark theme === */
+:root.dark {
+  --color-background: #09090b;
+  --color-foreground: #fafafa;
+  --color-surface: #18181b;
+  --color-surface-hover: #27272a;
+  --color-muted: #27272a;
+  --color-muted-foreground: #a1a1aa;
+  --color-border: #27272a;
+  --color-card: #18181b;
+  --color-accent: #a78bfa;
+  --color-accent-foreground: #09090b;
+}
+
 /* === Glass morphism utility === */
 @utility glass {
-  background: rgba(24, 24, 27, 0.7);
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
   backdrop-filter: blur(12px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
 }
 
 /* === Gradient text utility === */
@@ -65,13 +84,14 @@
   50% { transform: translateY(-8px); }
 }
 
-/* === Base resets for the app === */
+/* === Base === */
 @layer base {
   body {
-    background-color: #ffffff;
-    color: #1a1a2e;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s, color 0.3s;
   }
 }
