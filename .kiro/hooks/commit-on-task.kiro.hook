@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "name": "大タスク完了時コミット",
+  "description": "タスク実行が停止した後、未コミットの大タスクがあればコミットを促す。コミット粒度は tasks.md のトップレベル番号単位。",
+  "version": "1",
+  "when": {
+    "type": "postTaskExecution"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Check if there are uncommitted changes from a completed top-level task (e.g., \"3. 動的プロンプト生成エンジン\"). If so, create a git commit with message format: \"feat(evolution): {大タスクのタイトル}\". Stage only files related to the completed task. Do NOT commit if only sub-tasks within an incomplete parent are done. Checkpoint tasks (4, 8, 12, 16, 19, 24, 27) do not require commits."
+  },
+  "workspaceFolderName": "AgentProfiler",
+  "shortName": "commit-on-task"
+}

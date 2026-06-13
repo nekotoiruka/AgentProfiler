@@ -1,5 +1,6 @@
 ---
 inclusion: auto
+description: Python・TypeScript のコーディング規約・テスト方針・セキュリティルール
 ---
 
 # コーディング規約

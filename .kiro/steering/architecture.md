@@ -1,5 +1,6 @@
 ---
 inclusion: auto
+description: Backend (FastAPI) / Frontend (Vue 3) のアーキテクチャ・ディレクトリ構成ガイド
 ---
 
 # アーキテクチャガイド

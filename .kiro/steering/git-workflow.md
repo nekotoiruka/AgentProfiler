@@ -1,5 +1,6 @@
 ---
 inclusion: auto
+description: Git ブランチ戦略・コミットメッセージ規約・PR マージ前チェックのルール
 ---
 
 # Git ワークフロー

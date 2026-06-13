@@ -1,6 +1,7 @@
 ---
 inclusion: fileMatch
 fileMatchPattern: "**/*test*,**/tests/**"
+description: pytest・Hypothesis・Vitest のテスト実行ルールとプロパティベーステスト方針
 ---
 
 # テスト規約
