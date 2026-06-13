@@ -5,17 +5,13 @@ semantic_contexts の各ドメインを MCP Tool として公開し、
 stdio / SSE トランスポートに対応。
 """
 
-from __future__ import annotations
-
 import logging
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import TextContent
 
-if TYPE_CHECKING:
-  from app.evolution.context_layer_manager import ContextLayerManager
+from app.evolution.context_layer_manager import ContextLayerManager
 
 logger = logging.getLogger(__name__)
 
