@@ -16,6 +16,8 @@
 - GET /discussions/{discussion_id} — 議論ターン履歴取得
 - GET /compatibility/{agent_id_1}/{agent_id_2} — 2エージェント間の相性診断
 - GET /agents/{agent_id}/recommendations — カテゴリ別レコメンド
+- GET /conversations/{thread_id}/export — 1対1チャットログエクスポート
+- GET /discussions/{discussion_id}/export — マルチエージェント議論ログエクスポート
 """
 
 import logging
@@ -30,6 +32,7 @@ from app.evolution.compatibility import CompatibilityEngine
 from app.evolution.context_layer_manager import ContextLayerManager
 from app.evolution.dependencies import get_service
 from app.evolution.discussion_engine import DiscussionEngine
+from app.evolution.export import ExportService
 from app.evolution.hybrid_search import HybridSearchEngine
 from app.evolution.models import (
   AgentResponse,
@@ -880,3 +883,86 @@ async def get_recommendations(agent_id: str) -> dict:
   }
 
   return result
+
+
+# --- Export エンドポイント ---
+
+
+@evolution_router.get("/conversations/{thread_id}/export")
+async def export_conversation(
+  thread_id: str, format: str = "json"
+) -> Response:
+  """1対1チャットログをエクスポートする。
+
+  指定スレッドの全ターンを JSON または Markdown 形式でダウンロードする。
+  thread_id にターンが存在しない場合は 404 を返す。
+
+  Validates: Requirements 23.2, 23.5, 23.6
+  """
+  _require_services()
+
+  export_service: ExportService = get_service("export_service")  # type: ignore
+  chat_service: ChatService = get_service("chat_service")  # type: ignore
+
+  # ターン存在確認: 空の場合は会話が存在しないとみなす
+  turns = await chat_service.get_history(thread_id)
+  if not turns:
+    raise HTTPException(
+      status_code=404,
+      detail=f"Conversation '{thread_id}' not found",
+    )
+
+  try:
+    content = await export_service.export_thread(thread_id, format=format)
+  except ValueError as e:
+    raise HTTPException(status_code=400, detail=str(e))
+
+  if format == "markdown":
+    return Response(
+      content=content,
+      media_type="text/plain; charset=utf-8",
+    )
+  return Response(
+    content=content,
+    media_type="application/json",
+  )
+
+
+@evolution_router.get("/discussions/{discussion_id}/export")
+async def export_discussion(
+  discussion_id: str, format: str = "json"
+) -> Response:
+  """マルチエージェント議論ログをエクスポートする。
+
+  指定議論セッションの全ターンを JSON または Markdown 形式でダウンロードする。
+  discussion_id にターンが存在しない場合は 404 を返す。
+
+  Validates: Requirements 23.3, 23.5, 23.6
+  """
+  _require_services()
+
+  export_service: ExportService = get_service("export_service")  # type: ignore
+  discussion_engine: DiscussionEngine = get_service("discussion_engine")  # type: ignore
+
+  # ターン存在確認: 空の場合は議論が存在しないとみなす
+  turns = await discussion_engine.get_history(discussion_id)
+  if not turns:
+    raise HTTPException(
+      status_code=404,
+      detail=f"Discussion '{discussion_id}' not found",
+    )
+
+  try:
+    content = await export_service.export_discussion(discussion_id, format=format)
+  except ValueError as e:
+    raise HTTPException(status_code=400, detail=str(e))
+
+  if format == "markdown":
+    return Response(
+      content=content,
+      media_type="text/plain; charset=utf-8",
+    )
+  return Response(
+    content=content,
+    media_type="application/json",
+  )

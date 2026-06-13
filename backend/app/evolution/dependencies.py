@@ -15,6 +15,7 @@ from app.evolution.config import EvolutionSettings
 from app.evolution.context_layer_manager import ContextLayerManager
 from app.evolution.discussion_engine import DiscussionEngine
 from app.evolution.embedding_client import EmbeddingClient
+from app.evolution.export import ExportService
 from app.evolution.package_generator import PackageGenerator
 from app.evolution.prompt_engine import PromptEngine
 from app.evolution.routing_engine import RoutingEngine
@@ -120,6 +121,12 @@ async def init_evolution_services() -> None:
   # Compatibility Engine (4軸パラメータ相性診断・レコメンド)
   compatibility_engine = CompatibilityEngine()
 
+  # Export Service (会話ログエクスポート: JSON / Markdown)
+  export_service = ExportService(
+    chat_service=chat_service,
+    discussion_engine=discussion_engine,
+  )
+
   # サービスコンテナに登録
   _services["settings"] = settings
   _services["embedding_client"] = embedding_client
@@ -133,6 +140,7 @@ async def init_evolution_services() -> None:
   _services["chat_service"] = chat_service
   _services["discussion_engine"] = discussion_engine
   _services["compatibility_engine"] = compatibility_engine
+  _services["export_service"] = export_service
 
   logger.info("Evolution services initialized successfully")
 
@@ -144,7 +152,8 @@ def get_service(name: str) -> object | None:
     name: サービス名 (settings, embedding_client, semantic_retriever,
           context_layer_manager, prompt_engine, routing_engine,
           semantic_cache, agent_manager, package_generator,
-          chat_service, discussion_engine, compatibility_engine)
+          chat_service, discussion_engine, compatibility_engine,
+          export_service)
 
   Returns:
     登録済みサービスインスタンス。未初期化の場合は None。
