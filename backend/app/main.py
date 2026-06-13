@@ -17,6 +17,8 @@ load_dotenv(_env_path)
 
 from app.api.dependencies import init_services
 from app.api.routes import router
+from app.evolution.dependencies import init_evolution_services
+from app.evolution.routes import evolution_router
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +33,7 @@ async def lifespan(app: FastAPI):
   logger.info("Initializing services...")
   await init_services()
   logger.info("Services initialized successfully")
+  await init_evolution_services()
   yield
   # 終了時のクリーンアップ（将来の拡張用）
   logger.info("Shutting down...")
@@ -54,6 +57,7 @@ app.add_middleware(
 
 # ルーター登録
 app.include_router(router)
+app.include_router(evolution_router)
 
 
 @app.get("/health")
