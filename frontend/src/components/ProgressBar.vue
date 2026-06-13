@@ -89,18 +89,18 @@ function clamp(value: number): number {
 
 .category-name {
   font-weight: 500;
-  color: #374151;
+  color: var(--color-foreground);
 }
 
 .progress-value {
   font-variant-numeric: tabular-nums;
-  color: #6b7280;
+  color: var(--color-muted-foreground);
 }
 
 .progress-track {
   height: 8px;
   border-radius: 4px;
-  background-color: #e5e7eb;
+  background-color: var(--color-border);
   overflow: hidden;
 }
 

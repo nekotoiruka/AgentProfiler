@@ -184,7 +184,7 @@ function handleBack(): void {
 
 /* Card layout */
 .multi-select-card {
-  background: #ffffff;
+  background: var(--color-card);
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   padding: 2rem;
@@ -197,12 +197,12 @@ function handleBack(): void {
   font-weight: 600;
   line-height: 1.6;
   margin: 0 0 0.75rem;
-  color: #1a1a2e;
+  color: var(--color-foreground);
 }
 
 .multi-select-card__count {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-muted-foreground);
   margin: 0 0 1.25rem;
 }
 
@@ -221,7 +221,7 @@ function handleBack(): void {
   padding: 0.75rem 1rem;
   border: 2px solid #e0e0e0;
   border-radius: 8px;
-  background: #fafafa;
+  background: var(--color-surface);
   cursor: pointer;
   transition: border-color 200ms, background-color 200ms;
   user-select: none;
@@ -253,7 +253,7 @@ function handleBack(): void {
 .multi-select-card__label {
   font-size: 0.9rem;
   line-height: 1.4;
-  color: #333;
+  color: var(--color-foreground);
 }
 
 /* Actions (same style as QuestionCard) */
@@ -270,13 +270,13 @@ function handleBack(): void {
   border: 1px solid #ccc;
   border-radius: 6px;
   background: transparent;
-  color: #555;
+  color: var(--color-muted-foreground);
   cursor: pointer;
   transition: background-color 200ms;
 }
 
 .multi-select-card__back-btn:hover {
-  background: #f0f0f0;
+  background: var(--color-surface-hover);
 }
 
 .multi-select-card__back-btn:focus-visible {

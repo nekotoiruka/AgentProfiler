@@ -235,7 +235,7 @@ function handleBack(): void {
 
 /* --- Card layout --- */
 .question-card {
-  background: #ffffff;
+  background: var(--color-card);
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   padding: 2rem;
@@ -248,7 +248,7 @@ function handleBack(): void {
   font-weight: 600;
   line-height: 1.6;
   margin: 0 0 1.5rem;
-  color: #1a1a2e;
+  color: var(--color-foreground);
 }
 
 /* --- Choices --- */
@@ -266,17 +266,17 @@ function handleBack(): void {
   font-size: 0.95rem;
   line-height: 1.5;
   text-align: left;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--color-border);
   border-radius: 8px;
-  background: #fafafa;
-  color: #333;
+  background: var(--color-surface);
+  color: var(--color-foreground);
   cursor: pointer;
   transition: border-color 200ms, background-color 200ms, box-shadow 200ms;
 }
 
 .question-card__choice-btn:hover {
   border-color: #6c63ff;
-  background: #f5f3ff;
+  background: var(--color-primary-muted);
 }
 
 .question-card__choice-btn:focus-visible {
@@ -286,8 +286,8 @@ function handleBack(): void {
 
 .question-card__choice-btn--selected {
   border-color: #6c63ff;
-  background: #ede9fe;
-  color: #1a1a2e;
+  background: var(--color-primary-muted);
+  color: var(--color-foreground);
   box-shadow: 0 0 0 1px #6c63ff;
   font-weight: 500;
 }
@@ -305,7 +305,7 @@ function handleBack(): void {
   display: block;
   font-size: 0.85rem;
   font-weight: 500;
-  color: #555;
+  color: var(--color-muted-foreground);
   margin-bottom: 0.5rem;
 }
 
@@ -315,9 +315,10 @@ function handleBack(): void {
   padding: 0.75rem 1rem;
   font-size: 0.95rem;
   line-height: 1.5;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--color-border);
   border-radius: 8px;
-  background: #fafafa;
+  background: var(--color-surface);
+  color: var(--color-foreground);
   resize: vertical;
   transition: border-color 200ms;
   box-sizing: border-box;
@@ -332,7 +333,7 @@ function handleBack(): void {
   display: block;
   text-align: right;
   font-size: 0.8rem;
-  color: #888;
+  color: var(--color-muted-foreground);
   margin-top: 0.25rem;
 }
 
@@ -352,17 +353,17 @@ function handleBack(): void {
 .question-card__back-btn {
   padding: 0.625rem 1.25rem;
   font-size: 0.9rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   background: transparent;
-  color: #555;
+  color: var(--color-muted-foreground);
   cursor: pointer;
   transition: background-color 200ms, border-color 200ms;
 }
 
 .question-card__back-btn:hover {
-  background: #f0f0f0;
-  border-color: #aaa;
+  background: var(--color-surface-hover);
+  border-color: var(--color-muted-foreground);
 }
 
 .question-card__back-btn:focus-visible {

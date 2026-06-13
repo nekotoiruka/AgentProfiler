@@ -319,7 +319,7 @@ function handleBack(): void {
 }
 
 .survey-view__error-message {
-  color: #dc2626;
+  color: #ef4444;
   font-weight: 500;
 }
 
@@ -340,10 +340,10 @@ function handleBack(): void {
 .survey-view__api-error {
   margin-top: 1rem;
   padding: 0.75rem 1rem;
-  background-color: #fef2f2;
+  background-color: rgba(239, 68, 68, 0.1);
   border: 1px solid #fecaca;
   border-radius: 0.375rem;
-  color: #dc2626;
+  color: #ef4444;
   font-size: 0.875rem;
 }
 </style>
