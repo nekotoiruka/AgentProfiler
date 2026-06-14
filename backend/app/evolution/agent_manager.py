@@ -26,6 +26,7 @@ class AgentRecord:
   display_name: str
   created_at: str  # ISO 8601
   is_active: bool
+  visibility: str = "private"  # "private" | "published"
 
 
 class AgentManager:
@@ -60,12 +61,27 @@ class AgentManager:
           profile_id TEXT NOT NULL,
           display_name TEXT NOT NULL,
           created_at TEXT NOT NULL,
-          is_active INTEGER NOT NULL DEFAULT 1
+          is_active INTEGER NOT NULL DEFAULT 1,
+          visibility TEXT NOT NULL DEFAULT 'private'
         )
       """)
       await db.execute("""
         CREATE INDEX IF NOT EXISTS idx_agents_profile
         ON agents(profile_id)
+      """)
+      # 既存テーブルに visibility カラムがない場合のマイグレーション
+      # (CREATE TABLE IF NOT EXISTS は既存テーブルを変更しないため)
+      try:
+        await db.execute(
+          "ALTER TABLE agents ADD COLUMN visibility TEXT NOT NULL DEFAULT 'private'"
+        )
+      except Exception:
+        # カラム既存の場合は無視
+        pass
+      # visibility カラム確保後にインデックスを作成
+      await db.execute("""
+        CREATE INDEX IF NOT EXISTS idx_agents_visibility
+        ON agents(visibility)
       """)
       # プロファイル永続化テーブル（サーバー再起動時に自動復元するため）
       await db.execute("""
@@ -167,6 +183,7 @@ class AgentManager:
       display_name=display_name,
       created_at=created_at,
       is_active=True,
+      visibility="private",
     )
     logger.info(
       "Agent created: agent_id=%s, profile_id=%s, display_name=%s",
@@ -188,7 +205,8 @@ class AgentManager:
     async with aiosqlite.connect(self._db_path) as db:
       db.row_factory = aiosqlite.Row
       async with db.execute(
-        "SELECT agent_id, profile_id, display_name, created_at, is_active "
+        "SELECT agent_id, profile_id, display_name, created_at, is_active, "
+        "COALESCE(visibility, 'private') as visibility "
         "FROM agents WHERE agent_id = ?",
         (agent_id,),
       ) as cursor:
@@ -201,6 +219,7 @@ class AgentManager:
           display_name=row["display_name"],
           created_at=row["created_at"],
           is_active=bool(row["is_active"]),
+          visibility=row["visibility"],
         )
 
   async def list_active(self, profile_id: str) -> list[AgentRecord]:
@@ -215,7 +234,8 @@ class AgentManager:
     async with aiosqlite.connect(self._db_path) as db:
       db.row_factory = aiosqlite.Row
       async with db.execute(
-        "SELECT agent_id, profile_id, display_name, created_at, is_active "
+        "SELECT agent_id, profile_id, display_name, created_at, is_active, "
+        "COALESCE(visibility, 'private') as visibility "
         "FROM agents WHERE profile_id = ? AND is_active = 1 "
         "ORDER BY created_at ASC",
         (profile_id,),
@@ -228,6 +248,7 @@ class AgentManager:
             display_name=row["display_name"],
             created_at=row["created_at"],
             is_active=bool(row["is_active"]),
+            visibility=row["visibility"],
           )
           for row in rows
         ]
@@ -241,7 +262,8 @@ class AgentManager:
     async with aiosqlite.connect(self._db_path) as db:
       db.row_factory = aiosqlite.Row
       async with db.execute(
-        "SELECT agent_id, profile_id, display_name, created_at, is_active "
+        "SELECT agent_id, profile_id, display_name, created_at, is_active, "
+        "COALESCE(visibility, 'private') as visibility "
         "FROM agents WHERE is_active = 1 "
         "ORDER BY created_at ASC",
       ) as cursor:
@@ -253,6 +275,7 @@ class AgentManager:
             display_name=row["display_name"],
             created_at=row["created_at"],
             is_active=bool(row["is_active"]),
+            visibility=row["visibility"],
           )
           for row in rows
         ]
@@ -309,3 +332,89 @@ class AgentManager:
       )
       await db.commit()
     logger.info("Agent soft-deleted: agent_id=%s", agent_id)
+
+  async def publish(self, agent_id: str) -> AgentRecord:
+    """エージェントを公開状態に変更する（明示的 opt-in）。
+
+    公開されたエージェントは他ユーザーからチャット・議論の
+    相手として選択可能になる。
+
+    Args:
+      agent_id: 公開対象のエージェント ID
+
+    Returns:
+      更新後の AgentRecord
+
+    Raises:
+      ValueError: agent_id が存在しない / 非アクティブの場合
+    """
+    record = await self.get(agent_id)
+    if record is None or not record.is_active:
+      raise ValueError(f"Agent '{agent_id}' not found or not active")
+
+    async with aiosqlite.connect(self._db_path) as db:
+      await db.execute(
+        "UPDATE agents SET visibility = 'published' WHERE agent_id = ?",
+        (agent_id,),
+      )
+      await db.commit()
+
+    logger.info("Agent published: agent_id=%s", agent_id)
+    record.visibility = "published"
+    return record
+
+  async def unpublish(self, agent_id: str) -> AgentRecord:
+    """エージェントを非公開に戻す。
+
+    Args:
+      agent_id: 非公開にするエージェント ID
+
+    Returns:
+      更新後の AgentRecord
+
+    Raises:
+      ValueError: agent_id が存在しない / 非アクティブの場合
+    """
+    record = await self.get(agent_id)
+    if record is None or not record.is_active:
+      raise ValueError(f"Agent '{agent_id}' not found or not active")
+
+    async with aiosqlite.connect(self._db_path) as db:
+      await db.execute(
+        "UPDATE agents SET visibility = 'private' WHERE agent_id = ?",
+        (agent_id,),
+      )
+      await db.commit()
+
+    logger.info("Agent unpublished: agent_id=%s", agent_id)
+    record.visibility = "private"
+    return record
+
+  async def list_published(self) -> list[AgentRecord]:
+    """公開済みの全エージェントを返す（全ユーザー横断）。
+
+    チャット・議論のパートナー選択に使用する。
+
+    Returns:
+      visibility='published' かつ is_active=1 の全レコード（作成日時昇順）
+    """
+    async with aiosqlite.connect(self._db_path) as db:
+      db.row_factory = aiosqlite.Row
+      async with db.execute(
+        "SELECT agent_id, profile_id, display_name, created_at, is_active, "
+        "COALESCE(visibility, 'private') as visibility "
+        "FROM agents WHERE visibility = 'published' AND is_active = 1 "
+        "ORDER BY created_at ASC",
+      ) as cursor:
+        rows = await cursor.fetchall()
+        return [
+          AgentRecord(
+            agent_id=row["agent_id"],
+            profile_id=row["profile_id"],
+            display_name=row["display_name"],
+            created_at=row["created_at"],
+            is_active=bool(row["is_active"]),
+            visibility=row["visibility"],
+          )
+          for row in rows
+        ]

@@ -887,6 +887,15 @@ class ChatService:
 
   スレッド管理・会話履歴・推論パイプライン統合を担う。
   SSE ストリーミングレスポンスをサポート。
+
+  推論パイプライン:
+  1. AgentManager で agent_id → profile_id を解決
+  2. ProfileOutput から persona/communication_tone/semantic_contexts を含む
+     リッチなシステムプロンプトを生成
+  3. OpenAI Responses API + Function Calling で推論実行
+  4. search_memory ツールにより、ユーザーの実回答データ・lexical_tags・
+     semantic_contexts を動的に検索し、LLM コンテキストに注入
+  5. モデルは記憶データに基づいて人格として応答を生成
   """
 
   DEFAULT_CONTEXT_WINDOW: int = 20  # 直近20ターンをコンテキストに含む
@@ -1189,6 +1198,110 @@ frontend/src/components/evolution/
 **ChatThread.vue**: 選択されたエージェントとの1対1チャット画面。ユーザーメッセージ（右寄せ）とエージェント応答（左寄せ + アバター）を時系列で表示。`useChat` composable が SSE ストリームを購読し、リアルタイム描画する。
 
 **DiscussionTheater.vue**: マルチエージェント議論の観覧画面。`DiscussionSetup` で2〜6エージェント選択 + テーマ入力後、`useDiscussion` composable が SSE でターンを受信し、`TurnBubble` を順次描画する。再生モード（リアルタイム / シミュレーション速度）切り替え、ターンカウンター、プログレスバーを表示。
+
+### 18. Persona Registry (agent_manager.py 拡張)
+
+```python
+from enum import Enum
+
+
+class AgentVisibility(str, Enum):
+  PRIVATE = "private"
+  PUBLISHED = "published"
+
+
+class AgentManager:
+  """拡張: 公開ペルソナレジストリ機能
+
+  既存の CRUD に加え、visibility (private/published) の状態管理と
+  公開ペルソナの全ユーザー横断一覧を提供する。
+  ユーザーがプロファイリング完了後に「公開」を承認したエージェントのみが
+  チャット・議論の相手として他者から選択可能になる。
+  """
+
+  async def publish(self, agent_id: str) -> "AgentRecord":
+    """エージェントを公開状態に変更する（明示的 opt-in）
+
+    Raises:
+      ValueError: agent_id が存在しない / 非アクティブの場合
+    """
+    ...
+
+  async def unpublish(self, agent_id: str) -> "AgentRecord":
+    """エージェントを非公開に戻す"""
+    ...
+
+  async def list_published(self) -> list["AgentRecord"]:
+    """公開済みの全エージェントを返す（全ユーザー横断）
+
+    チャット・議論のパートナー選択用。
+    """
+    ...
+```
+
+**DB スキーマ変更:**
+```sql
+ALTER TABLE agents ADD COLUMN visibility TEXT NOT NULL DEFAULT 'private';
+CREATE INDEX idx_agents_visibility ON agents(visibility) WHERE is_active = 1;
+```
+
+**API エンドポイント:**
+- `POST /api/v1/evolution/agents/{agent_id}/publish` — 公開承認
+- `POST /api/v1/evolution/agents/{agent_id}/unpublish` — 非公開に戻す
+- `GET /api/v1/evolution/agents/registry` — 公開済みペルソナ一覧
+
+### 19. Discussion Insight Summary (discussion_engine.py 拡張)
+
+```python
+@dataclass
+class InsightSummary:
+  """議論完了後の発見サマリー"""
+  discussion_id: str
+  key_insights: list[str]  # 3-5 個の主要な気づき
+  disagreements: list[str]  # 対立点
+  unexpected_perspectives: list[str]  # 予想外の視点
+  actionable_suggestions: list[str]  # 人間への actionable 提案
+  generated_at: str  # ISO 8601
+
+
+class DiscussionEngine:
+  """拡張: 議論完了後のインサイト生成
+
+  全ターンを LLM に投入し、人間にとって actionable な
+  発見・気づき・対立点・提案をまとめる。
+  """
+
+  async def generate_summary(self, discussion_id: str) -> InsightSummary:
+    """議論ログ全体を要約し、インサイトを抽出する。
+
+    LLM に議論全文を投入し、以下を抽出:
+    - key_insights: 主要な気づき (3-5個)
+    - disagreements: エージェント間の対立点
+    - unexpected_perspectives: 参加者の人格パラメータからは予想外だった視点
+    - actionable_suggestions: ユーザーへの具体的提案
+
+    Raises:
+      ValueError: discussion_id が存在しない場合
+      RuntimeError: LLM が利用不可の場合
+    """
+    ...
+```
+
+**API エンドポイント:**
+- `POST /api/v1/evolution/discussions/{discussion_id}/summary` — インサイト生成
+- `GET /api/v1/evolution/discussions/{discussion_id}/summary` — キャッシュ済みサマリー取得
+
+**DB テーブル:**
+```sql
+CREATE TABLE IF NOT EXISTS discussion_summaries (
+  discussion_id TEXT PRIMARY KEY,
+  key_insights TEXT NOT NULL,       -- JSON array
+  disagreements TEXT NOT NULL,       -- JSON array
+  unexpected_perspectives TEXT NOT NULL, -- JSON array
+  actionable_suggestions TEXT NOT NULL,  -- JSON array
+  generated_at TEXT NOT NULL
+);
+```
 
 ## Data Models
 
