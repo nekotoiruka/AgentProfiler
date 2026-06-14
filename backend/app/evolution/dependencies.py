@@ -108,6 +108,7 @@ async def init_evolution_services() -> None:
     db_path=evolution_db_path,
     routing_engine=routing_engine,
     context_layer_manager=context_layer_manager,
+    agent_manager=agent_manager,
   )
   await chat_service.init_db()
 

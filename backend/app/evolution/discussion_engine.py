@@ -6,6 +6,7 @@
 
 import json
 import logging
+import re
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -29,6 +30,18 @@ class DiscussionTurn:
   display_name: str
   content: str
   timestamp: str
+
+
+@dataclass
+class InsightSummary:
+  """議論完了後の発見サマリー"""
+
+  discussion_id: str
+  key_insights: list[str]  # 3-5 個の主要な気づき
+  disagreements: list[str]  # 対立点
+  unexpected_perspectives: list[str]  # 予想外の視点
+  actionable_suggestions: list[str]  # 人間への actionable 提案
+  generated_at: str  # ISO 8601
 
 
 class DiscussionEngine:
@@ -75,6 +88,17 @@ class DiscussionEngine:
       await db.execute("""
         CREATE INDEX IF NOT EXISTS idx_discussions_id
         ON discussions(discussion_id, turn_number)
+      """)
+      # インサイトサマリーテーブル
+      await db.execute("""
+        CREATE TABLE IF NOT EXISTS discussion_summaries (
+          discussion_id TEXT PRIMARY KEY,
+          key_insights TEXT NOT NULL,
+          disagreements TEXT NOT NULL,
+          unexpected_perspectives TEXT NOT NULL,
+          actionable_suggestions TEXT NOT NULL,
+          generated_at TEXT NOT NULL
+        )
       """)
       await db.commit()
     logger.info(
@@ -314,7 +338,12 @@ class DiscussionEngine:
       ]
       if base_os.axes:
         parts.append("  Personality axes:")
-        for axis_name, score in base_os.axes.items():
+        axes_dict = (
+          base_os.axes.model_dump()
+          if hasattr(base_os.axes, "model_dump")
+          else vars(base_os.axes)
+        )
+        for axis_name, score in axes_dict.items():
           parts.append(f"    - {axis_name}: {score}")
       if base_os.do_not_list:
         parts.append("  You MUST NOT:")
@@ -418,3 +447,138 @@ class DiscussionEngine:
       turn_number,
       agent_id,
     )
+
+  async def generate_summary(self, discussion_id: str) -> InsightSummary:
+    """議論ログ全体を LLM で要約し、インサイトを抽出する。
+
+    全ターンを LLM に投入し、人間にとって actionable な
+    発見・気づき・対立点・予想外の視点・提案をまとめる。
+    生成結果は DB にキャッシュされ、再生成時は上書きされる。
+
+    Args:
+      discussion_id: 対象の議論セッション ID
+
+    Returns:
+      InsightSummary
+
+    Raises:
+      ValueError: discussion_id が存在しないまたはターンが空の場合
+      RuntimeError: LLM が利用不可の場合
+    """
+    history = await self.get_history(discussion_id)
+    if not history:
+      raise ValueError(f"Discussion '{discussion_id}' not found or has no turns")
+
+    # 議論ログをテキストに整形
+    transcript_lines = []
+    for turn in history:
+      transcript_lines.append(
+        f"[Turn {turn['turn_number']}] {turn['display_name']}: {turn['content']}"
+      )
+    transcript = "\n".join(transcript_lines)
+
+    # LLM にインサイト抽出を依頼
+    system_prompt = (
+      "You are an expert discussion analyst. "
+      "Analyze the following multi-agent discussion transcript and extract insights "
+      "for the human observer. Respond in JSON format with these keys:\n"
+      '- "key_insights": array of 3-5 main discoveries or realizations\n'
+      '- "disagreements": array of points where agents disagreed\n'
+      '- "unexpected_perspectives": array of viewpoints that were surprising '
+      "given the agents' personality parameters\n"
+      '- "actionable_suggestions": array of concrete suggestions for the human\n'
+      "Respond ONLY with valid JSON. Use Japanese for all text content."
+    )
+
+    try:
+      response = await self._routing_engine.route(
+        utterance=f"以下の議論を分析してください:\n\n{transcript}",
+        system_prompt=system_prompt,
+      )
+    except RuntimeError:
+      raise RuntimeError("LLM unavailable for summary generation")
+
+    # LLM レスポンスを JSON パース
+    try:
+      data = json.loads(response)
+    except json.JSONDecodeError:
+      # JSON 部分を抽出する試み
+      import re
+      match = re.search(r"\{.*\}", response, re.DOTALL)
+      if match:
+        data = json.loads(match.group())
+      else:
+        # フォールバック: レスポンス全体を key_insights に格納
+        data = {
+          "key_insights": [response],
+          "disagreements": [],
+          "unexpected_perspectives": [],
+          "actionable_suggestions": [],
+        }
+
+    generated_at = datetime.now(timezone.utc).isoformat()
+
+    summary = InsightSummary(
+      discussion_id=discussion_id,
+      key_insights=data.get("key_insights", []),
+      disagreements=data.get("disagreements", []),
+      unexpected_perspectives=data.get("unexpected_perspectives", []),
+      actionable_suggestions=data.get("actionable_suggestions", []),
+      generated_at=generated_at,
+    )
+
+    # DB にキャッシュ (UPSERT)
+    async with aiosqlite.connect(self._db_path) as db:
+      await db.execute(
+        """
+        INSERT INTO discussion_summaries
+          (discussion_id, key_insights, disagreements,
+           unexpected_perspectives, actionable_suggestions, generated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(discussion_id) DO UPDATE SET
+          key_insights = excluded.key_insights,
+          disagreements = excluded.disagreements,
+          unexpected_perspectives = excluded.unexpected_perspectives,
+          actionable_suggestions = excluded.actionable_suggestions,
+          generated_at = excluded.generated_at
+        """,
+        (
+          discussion_id,
+          json.dumps(summary.key_insights, ensure_ascii=False),
+          json.dumps(summary.disagreements, ensure_ascii=False),
+          json.dumps(summary.unexpected_perspectives, ensure_ascii=False),
+          json.dumps(summary.actionable_suggestions, ensure_ascii=False),
+          generated_at,
+        ),
+      )
+      await db.commit()
+
+    logger.info("Discussion summary generated: discussion_id=%s", discussion_id)
+    return summary
+
+  async def get_summary(self, discussion_id: str) -> InsightSummary | None:
+    """キャッシュ済みのインサイトサマリーを取得する。
+
+    Args:
+      discussion_id: 対象の議論セッション ID
+
+    Returns:
+      InsightSummary。未生成の場合は None。
+    """
+    async with aiosqlite.connect(self._db_path) as db:
+      db.row_factory = aiosqlite.Row
+      async with db.execute(
+        "SELECT * FROM discussion_summaries WHERE discussion_id = ?",
+        (discussion_id,),
+      ) as cursor:
+        row = await cursor.fetchone()
+        if row is None:
+          return None
+        return InsightSummary(
+          discussion_id=row["discussion_id"],
+          key_insights=json.loads(row["key_insights"]),
+          disagreements=json.loads(row["disagreements"]),
+          unexpected_perspectives=json.loads(row["unexpected_perspectives"]),
+          actionable_suggestions=json.loads(row["actionable_suggestions"]),
+          generated_at=row["generated_at"],
+        )

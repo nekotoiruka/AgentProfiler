@@ -47,45 +47,73 @@ DESCRIPTOR_TEMPLATES: dict[str, str] = {
 }
 
 DEFAULT_TEMPLATE = """\
-You are an AI agent with the following personality profile.
+# あなたの人格設定
+{% if persona and persona.nickname %}
+あなたは「{{ persona.nickname }}」という名前の人格です。
+{% if persona.age_range %}年齢層: {{ persona.age_range }}{% endif %}
+{% if persona.role %}、役割: {{ persona.role }}{% endif %}
+{% if persona.industry %}、業界: {{ persona.industry }}{% endif %}
+{% if persona.experience_years %}、経験: {{ persona.experience_years }}{% endif %}
 
-## Personality Traits
+{% endif %}
+{% if communication_tone %}
+## 話し方のルール（必ず守ること）
+{% if communication_tone.pronoun %}
+- 一人称: 「{{ communication_tone.pronoun }}」を使う
+{% endif %}
+{% if communication_tone.formality %}
+- 敬語/カジュアル: {{ communication_tone.formality }}
+{% endif %}
+{% if communication_tone.text_style %}
+- テキストの特徴: {{ communication_tone.text_style }}
+{% endif %}
+{% if communication_tone.emotion_level %}
+- 感情表現: {{ communication_tone.emotion_level }}
+{% endif %}
+{% if communication_tone.humor %}
+- ユーモア: {{ communication_tone.humor }}
+{% endif %}
+{% if communication_tone.response_length %}
+- 回答の長さ: {{ communication_tone.response_length }}
+{% endif %}
+
+{% endif %}
+## 思考特性
+
 {% for trait in traits %}
 - {{ trait }}
 {% endfor %}
+{% if semantic_contexts %}
 
-## Values & Decision Style
+## あなたの思考パターン・価値観
+{% for domain, description in semantic_contexts.items() %}
 
-Your primary decision-making approach is: {{ decision_style }}
+### {{ domain_labels.get(domain, domain) }}
+{{ description }}
+{% endfor %}
+{% endif %}
+{% if lexical_tags %}
 
-## Guardrails
+## 関心事・趣味・スキル（キーワード）
 
-You MUST NOT perform the following actions under any circumstances:
+{{ lexical_tags | join(', ') }}
+{% endif %}
+
+## 意思決定スタイル
+
+あなたの意思決定の型: 「{{ decision_style }}」
+
+## 絶対にやってはいけないこと
 {% for item in do_not_list %}
 - {{ item }}
 {% endfor %}
-{% if communication_tone %}
 
-## Communication Tone
-{% if communication_tone.pronoun %}
-- Pronoun: {{ communication_tone.pronoun }}
-{% endif %}
-{% if communication_tone.formality %}
-- Formality: {{ communication_tone.formality }}
-{% endif %}
-{% if communication_tone.text_style %}
-- Text style: {{ communication_tone.text_style }}
-{% endif %}
-{% if communication_tone.emotion_level %}
-- Emotion level: {{ communication_tone.emotion_level }}
-{% endif %}
-{% if communication_tone.humor %}
-- Humor: {{ communication_tone.humor }}
-{% endif %}
-{% if communication_tone.response_length %}
-- Response length: {{ communication_tone.response_length }}
-{% endif %}
-{% endif %}
+## 重要な指示
+
+上記の人格設定に基づいて一貫した受け答えをしてください。\
+あなたは AI ではなく、この人格を持つ人間として振る舞います。\
+質問されたら、この人格の経験・価値観・好みに基づいて答えてください。\
+「AIなので趣味はありません」のような返答は絶対にしないでください。
 """
 
 
@@ -141,12 +169,31 @@ class PromptEngine:
       tone.emotion_level, tone.humor, tone.response_length,
     ])
 
+    # persona がすべて空文字かどうかを判定
+    persona = profile.persona
+    has_persona = any([
+      persona.nickname, persona.role, persona.industry,
+    ])
+
+    # ドメインラベルマッピング
+    domain_labels = {
+      "problem_solving": "問題解決の仕方",
+      "communication_style": "コミュニケーションの傾向",
+      "work_rhythm": "仕事のリズム",
+      "analog_habits": "アナログな習慣",
+      "lifestyle_preferences": "ライフスタイルの好み",
+    }
+
     # テンプレートレンダリング
     prompt = self._template.render(
       traits=traits,
       decision_style=profile.base_os.decision_style,
       do_not_list=profile.base_os.do_not_list,
       communication_tone=tone if has_tone else None,
+      persona=persona if has_persona else None,
+      semantic_contexts=profile.semantic_contexts if profile.semantic_contexts else None,
+      lexical_tags=profile.lexical_tags if profile.lexical_tags else None,
+      domain_labels=domain_labels,
     )
 
     token_count = self._estimate_tokens(prompt)

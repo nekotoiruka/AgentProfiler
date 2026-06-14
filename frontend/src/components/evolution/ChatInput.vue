@@ -26,6 +26,8 @@ function send() {
 }
 
 function handleKeydown(event: KeyboardEvent) {
+  // IME コンポジション中（日本語変換確定など）は送信しない
+  if (event.isComposing || event.keyCode === 229) return
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
     send()

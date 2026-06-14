@@ -426,6 +426,30 @@ async def list_agents(profile_id: str | None = None) -> list[AgentResponse]:
   ]
 
 
+@evolution_router.get("/agents/registry", response_model=list[AgentResponse])
+async def list_registry() -> list[AgentResponse]:
+  """公開済みペルソナレジストリ（全ユーザー横断）を返す。
+
+  チャット・議論パートナー選択用。visibility='published' かつ
+  is_active=True のエージェントのみ返却する。
+  """
+  _require_services()
+
+  agent_manager: AgentManager = get_service("agent_manager")  # type: ignore
+  records = await agent_manager.list_published()
+
+  return [
+    AgentResponse(
+      agent_id=r.agent_id,
+      profile_id=r.profile_id,
+      display_name=r.display_name,
+      created_at=r.created_at,
+      is_active=r.is_active,
+    )
+    for r in records
+  ]
+
+
 @evolution_router.get("/agents/{agent_id}", response_model=AgentResponse)
 async def get_agent(agent_id: str) -> AgentResponse:
   """エージェントペルソナを個別取得する。
@@ -913,6 +937,111 @@ async def get_recommendations(agent_id: str) -> dict:
 
 
 # --- Export エンドポイント ---
+
+
+@evolution_router.post("/agents/{agent_id}/publish", response_model=AgentResponse)
+async def publish_agent(agent_id: str) -> AgentResponse:
+  """エージェントを公開する（明示的 opt-in）。
+
+  公開されたエージェントは /agents/registry に表示され、
+  他ユーザーからチャット・議論の相手として選択可能になる。
+  """
+  _require_services()
+
+  agent_manager: AgentManager = get_service("agent_manager")  # type: ignore
+
+  try:
+    record = await agent_manager.publish(agent_id)
+  except ValueError as e:
+    raise HTTPException(status_code=404, detail=str(e))
+
+  return AgentResponse(
+    agent_id=record.agent_id,
+    profile_id=record.profile_id,
+    display_name=record.display_name,
+    created_at=record.created_at,
+    is_active=record.is_active,
+  )
+
+
+@evolution_router.post("/agents/{agent_id}/unpublish", response_model=AgentResponse)
+async def unpublish_agent(agent_id: str) -> AgentResponse:
+  """エージェントを非公開に戻す。"""
+  _require_services()
+
+  agent_manager: AgentManager = get_service("agent_manager")  # type: ignore
+
+  try:
+    record = await agent_manager.unpublish(agent_id)
+  except ValueError as e:
+    raise HTTPException(status_code=404, detail=str(e))
+
+  return AgentResponse(
+    agent_id=record.agent_id,
+    profile_id=record.profile_id,
+    display_name=record.display_name,
+    created_at=record.created_at,
+    is_active=record.is_active,
+  )
+
+
+# --- Discussion Summary エンドポイント ---
+
+
+@evolution_router.post("/discussions/{discussion_id}/summary")
+async def generate_discussion_summary(discussion_id: str) -> dict:
+  """議論のインサイトサマリーを生成する。
+
+  議論ログ全文を LLM に投入し、主要な発見・対立点・予想外の視点・
+  actionable 提案を抽出する。生成済みの場合は再生成（上書き）する。
+  """
+  _require_services()
+
+  discussion_engine: DiscussionEngine = get_service("discussion_engine")  # type: ignore
+
+  try:
+    summary = await discussion_engine.generate_summary(discussion_id)
+  except ValueError as e:
+    raise HTTPException(status_code=404, detail=str(e))
+  except RuntimeError as e:
+    raise HTTPException(status_code=503, detail=str(e))
+
+  return {
+    "discussion_id": summary.discussion_id,
+    "key_insights": summary.key_insights,
+    "disagreements": summary.disagreements,
+    "unexpected_perspectives": summary.unexpected_perspectives,
+    "actionable_suggestions": summary.actionable_suggestions,
+    "generated_at": summary.generated_at,
+  }
+
+
+@evolution_router.get("/discussions/{discussion_id}/summary")
+async def get_discussion_summary(discussion_id: str) -> dict:
+  """キャッシュ済みのインサイトサマリーを取得する。
+
+  未生成の場合は 404 を返す。
+  """
+  _require_services()
+
+  discussion_engine: DiscussionEngine = get_service("discussion_engine")  # type: ignore
+  summary = await discussion_engine.get_summary(discussion_id)
+
+  if summary is None:
+    raise HTTPException(
+      status_code=404,
+      detail=f"Summary for discussion '{discussion_id}' not found. "
+      "Generate it first via POST.",
+    )
+
+  return {
+    "discussion_id": summary.discussion_id,
+    "key_insights": summary.key_insights,
+    "disagreements": summary.disagreements,
+    "unexpected_perspectives": summary.unexpected_perspectives,
+    "actionable_suggestions": summary.actionable_suggestions,
+    "generated_at": summary.generated_at,
+  }
 
 
 @evolution_router.get("/conversations/{thread_id}/export")

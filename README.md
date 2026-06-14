@@ -25,10 +25,14 @@
                                                         ↓
                             1対1チャット ← 分身と対話 → マルチエージェント議論
                                                         ↓
-                            相性診断 / Agent Pack Zip / 会話エクスポート
+                                  公開レジストリ登録 → 他者の分身と議論
+                                                        ↓
+                            相性診断 / インサイト抽出 / Agent Pack Zip / 会話エクスポート
 ```
 
 15分の質問に答えるだけで、**あなたの口調・判断軸・価値観・禁忌事項を内蔵したAIエージェント**が生まれます。そいつと話す。そいつ同士を戦わせる。自分の中の矛盾に気づく。
+
+**新機能: ペルソナレジストリ** — 分身を「公開」すると、他のユーザーの分身と対話・議論が可能に。AI同士のぶつかり合いから、人間には思いつかない視点を抽出してフィードバックします。
 
 ---
 
@@ -37,14 +41,16 @@
 | | 機能 | 詳細 |
 |--|------|------|
 | 🧠 | **4軸プロファイリング** | 47問（4択 + LLM 自由記述分析）で思考特性を数値化。独自の正規化アルゴリズムで 0.0〜1.0 の精密スコアを算出 |
-| ⚡ | **分身エージェント生成** | 1プロファイルから無限に分身を生成。3層コンテキストアーキテクチャ（Base OS / Agent Skills / MCP）で人格を階層管理 |
-| 💬 | **1対1チャット** | SSE ストリーミング対応。セマンティックキャッシュで類似発話を自動検知し LLM コスト 40%+ 削減 |
+| ⚡ | **分身エージェント生成** | プロファイルから AI 分身を生成。3層コンテキストアーキテクチャ（Base OS / Agent Skills / MCP）で人格を階層管理 |
+| 🌐 | **ペルソナレジストリ** | 分身を「公開」すると共有プールに登録。他ユーザーの分身とチャット・議論が可能に。公開には明示的な承認が必要 |
+| 💬 | **1対1チャット** | Responses API + Function Calling で推論。`search_memory` ツールがユーザーの実回答・タグ・行動傾向を動的検索し、人格に基づいた応答を生成 |
 | 🎭 | **マルチエージェント議論** | 2〜6体の分身がテーマについてターン制で自律議論。異なる人格パラメータが対立と共鳴を生む |
+| 💡 | **インサイト抽出** | 議論完了後、LLM が対話内容を分析。主要な気づき・対立点・予想外の視点・actionable な提案を人間にフィードバック |
 | 📊 | **相性診断 & レコメンド** | 4軸ベクトルの Cosine Similarity + Complementarity スコアで相性を数値化。「最も議論が白熱する相手」を自動マッチング |
 | 📦 | **Agent Pack Zip** | プロファイルから VSCode / GitHub Copilot / Claude Code 向けの構成資産を自動生成。解凍して配置するだけで分身が IDE 上で動く |
 | 🔍 | **ハイブリッド検索** | Lexical（O(1) 完全一致）+ Semantic（cosine similarity ベクトル検索）を重み付き統合。500タグ + 50コンテキストを 200ms 以内で検索 |
 | 🔀 | **ハイブリッドルーティング** | 発話の複雑度を 5ms 以内に分類し、軽量→ローカル SLM (ollama) / 複雑→Cloud LLM に自動振り分け |
-| 🌐 | **MCP Server** | Model Context Protocol (stdio/SSE) で分身のコンテキストを外部公開。任意の MCP 対応クライアントから接続可能 |
+| 🔗 | **MCP Server** | Model Context Protocol (stdio/SSE) で分身のコンテキストを外部公開。任意の MCP 対応クライアントから接続可能 |
 | 🔐 | **セキュリティ** | Gitleaks + Bandit (SAST) + Semgrep + Grype (脆弱性スキャン) + pip-audit + npm audit の6層セキュリティパイプライン |
 
 ---
@@ -86,7 +92,7 @@
 |-------|-----------|
 | Frontend | Vue 3.5, TypeScript 5.7, Vite 6, Tailwind CSS v4, Pinia, Vue Router |
 | Backend | FastAPI, Python 3.12+, Pydantic v2, aiosqlite, Jinja2, numpy |
-| LLM Integration | OpenAI API (gpt-4.1-mini), ollama (local SLM routing) |
+| LLM Integration | OpenAI Responses API (gpt-4.1-mini, function calling), ollama (local SLM routing) |
 | Search | numpy cosine similarity, in-memory hash index |
 | Protocol | MCP (Model Context Protocol) — stdio & SSE transport |
 | Testing | pytest + Hypothesis (36 property-based tests), Vitest |
