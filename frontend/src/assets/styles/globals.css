@@ -48,6 +48,7 @@
   --color-card: #18181b;
   --color-accent: #a78bfa;
   --color-accent-foreground: #09090b;
+  --color-primary-muted: rgba(109, 40, 217, 0.15);
 }
 
 /* === Glass morphism utility === */
