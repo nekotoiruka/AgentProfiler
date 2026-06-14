@@ -227,6 +227,51 @@ def create_llm_client() -> OpenAI:
 - Other回答送信時に LLM スコアリングを非同期実行
 - レスポンスタイムへの影響を最小化（バックグラウンド処理 or 計算時に一括実行）
 
+### Step 4: チャット推論 (Responses API + Function Calling)
+- `RoutingEngine.route_with_tools()` — Responses API を使用したツール付き推論
+- `search_memory` ツール定義: ペルソナの記憶/経験/価値観をハイブリッド検索
+- Function calling ループ: モデルがツールを呼ぶ → 検索実行 → 結果返却 → 最終回答
+- `ChatService.send_message()` 内で `route_with_tools` を使用
+- 最大3ラウンドのツール呼び出しループ
+
+#### チャット推論フロー
+
+```
+ユーザー発話 → ChatService.send_message()
+  → _resolve_profile_id() → profile_id 取得
+  → _build_system_prompt() → リッチな人格プロンプト生成
+  → route_with_tools(utterance, instructions, tools=[search_memory])
+    → Responses API 呼び出し (Round 1)
+      → モデルが search_memory("趣味") を呼び出し
+      → tool_executor → CLM.get_skill_context() + get_semantic_context()
+      → 検索結果を function_call_output として返却
+    → Responses API 呼び出し (Round 2)
+      → モデルが記憶データを踏まえた最終回答を生成
+  → レスポンスを DB に保存 + ユーザーに返却
+```
+
+#### search_memory ツール定義
+
+```python
+MEMORY_SEARCH_TOOL = {
+    "type": "function",
+    "name": "search_memory",
+    "description": "このペルソナの記憶・経験・価値観・習慣に関する情報を検索する",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "検索クエリ（自然言語）"
+            }
+        },
+        "required": ["query"],
+        "additionalProperties": false
+    },
+    "strict": true
+}
+```
+
 ---
 
 ## 参考リンク
