@@ -387,8 +387,8 @@ class DiscussionEngine:
   ) -> str:
     """LLM に送るユーザーメッセージ（会話コンテキスト）を構築する。
 
-    テーマと過去の全発話履歴を含め、現在のエージェントに
-    次の発言を促すメッセージを生成する。
+    自分の過去発言と他者の発言を明確に区別し、
+    モデルが「自分の人格」と「相手の意見」を混同しないようにする。
 
     Args:
       theme: 議論テーマ
@@ -398,18 +398,31 @@ class DiscussionEngine:
     Returns:
       LLM に送信するメッセージ文字列
     """
-    parts = [f"Discussion theme: {theme}"]
+    parts = [f"議論テーマ: {theme}"]
 
     if history:
-      parts.append("")
-      parts.append("Conversation so far:")
-      for entry in history:
-        parts.append(f"  {entry['display_name']}: {entry['content']}")
+      # 自分の過去発言と他者の発言を分離
+      my_past = [e for e in history if e["display_name"] == current_display_name]
+      others = [e for e in history if e["display_name"] != current_display_name]
+
+      if others:
+        parts.append("")
+        parts.append("--- 他の参加者の発言（あなたの発言ではありません） ---")
+        for entry in others:
+          parts.append(f"[{entry['display_name']}]: {entry['content']}")
+
+      if my_past:
+        parts.append("")
+        parts.append("--- あなた自身の過去の発言 ---")
+        for entry in my_past:
+          parts.append(f"[あなた]: {entry['content']}")
 
     parts.append("")
     parts.append(
-      f"Now it's your turn, {current_display_name}. "
-      "Please share your thoughts."
+      f"あなたは「{current_display_name}」です。"
+      "上記の他者の発言を踏まえて、あなた自身の人格設定と経験に基づいて発言してください。"
+      "他者の経験や趣味を自分のものとして語らないでください。"
+      "1〜3文で簡潔に。"
     )
     return "\n".join(parts)
 
