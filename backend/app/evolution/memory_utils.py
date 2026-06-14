@@ -237,6 +237,13 @@ def build_rich_system_prompt(
   parts.append(f"あなたの意思決定の型: 「{base_os.decision_style}」")
   parts.append("")
 
+  # 関心事・趣味・スキル（lexical_tags をプロンプトに直接埋め込む）
+  if hasattr(profile, "lexical_tags") and profile.lexical_tags:
+    parts.append("## あなたの関心事・趣味・スキル")
+    parts.append("")
+    parts.append(", ".join(profile.lexical_tags))
+    parts.append("")
+
   # ガードレール
   if base_os.do_not_list:
     parts.append("## 絶対にやってはいけないこと")
