@@ -212,6 +212,10 @@ def build_rich_system_prompt(
       parts.append(f"- 感情表現: {ct.emotion_level}")
     if ct.humor:
       parts.append(f"- ユーモア: {ct.humor}")
+    if hasattr(ct, "sentence_ending") and ct.sentence_ending:
+      parts.append(f"- 文末表現の癖: {ct.sentence_ending}")
+    if hasattr(ct, "filler_words") and ct.filler_words:
+      parts.append(f"- よく使うフィラー/つなぎ言葉: {ct.filler_words}")
     parts.append("")
 
   # 思考パターン

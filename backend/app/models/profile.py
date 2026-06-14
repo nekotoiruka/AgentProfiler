@@ -50,6 +50,8 @@ class CommunicationTone(BaseModel):
   emotion_level: str = ""
   humor: str = ""
   response_length: str = ""
+  sentence_ending: str = ""
+  filler_words: str = ""
 
 
 class Values(BaseModel):

@@ -22,7 +22,7 @@ ALL_QUESTION_IDS = [
   "lif_005", "lif_006", "lif_007", "lif_008", "lif_009",
   "int_001", "int_002", "int_003", "int_004", "int_005",
   "per_001", "per_002", "per_003", "per_004", "per_005",
-  "ton_001", "ton_002", "ton_003", "ton_004", "ton_005",
+  "ton_001", "ton_002", "ton_003", "ton_004", "ton_005", "ton_006", "ton_007",
 ]
 
 

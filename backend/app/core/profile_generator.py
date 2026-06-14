@@ -647,6 +647,8 @@ class ProfileGenerator:
       "ton_003": "text_style",
       "ton_004": "emotion_level",
       "ton_005": "humor",
+      "ton_006": "sentence_ending",
+      "ton_007": "filler_words",
     }
 
     for answer in answers:

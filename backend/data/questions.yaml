@@ -901,3 +901,33 @@ categories:
             label: "ブラックユーモア寄り"
         source_reference: ""
 
+      - id: "ton_006"
+        text: "文末表現として最もよく使うパターンは？"
+        category_id: "communication_tone"
+        question_type: "single_choice"
+        choices:
+          - id: "a"
+            label: "〜だよね / 〜だね / 〜じゃん"
+          - id: "b"
+            label: "〜だな / 〜だよな / 〜なんだが"
+          - id: "c"
+            label: "〜っすね / 〜ですね / 〜ですかね"
+          - id: "d"
+            label: "〜かも / 〜かな / 〜って感じ"
+        source_reference: ""
+
+      - id: "ton_007"
+        text: "会話の中で無意識に使いがちなフィラー（つなぎ言葉）は？"
+        category_id: "communication_tone"
+        question_type: "single_choice"
+        choices:
+          - id: "a"
+            label: "まあ / なんか / とりあえず"
+          - id: "b"
+            label: "ぶっちゃけ / 正直 / 実際"
+          - id: "c"
+            label: "てか / いや / そもそも"
+          - id: "d"
+            label: "えっと / うーん / そうですね"
+        source_reference: ""
+

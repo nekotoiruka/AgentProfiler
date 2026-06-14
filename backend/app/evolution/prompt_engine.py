@@ -73,6 +73,12 @@ DEFAULT_TEMPLATE = """\
 {% if communication_tone.humor %}
 - ユーモア: {{ communication_tone.humor }}
 {% endif %}
+{% if communication_tone.sentence_ending %}
+- 文末表現の癖: {{ communication_tone.sentence_ending }}
+{% endif %}
+{% if communication_tone.filler_words %}
+- よく使うフィラー: {{ communication_tone.filler_words }}
+{% endif %}
 {% if communication_tone.response_length %}
 - 回答の長さ: {{ communication_tone.response_length }}
 {% endif %}
