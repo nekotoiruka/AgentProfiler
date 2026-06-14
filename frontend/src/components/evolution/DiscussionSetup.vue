@@ -101,31 +101,42 @@ function startDiscussion() {
 .agent-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0; }
 .chip {
   padding: 0.5rem 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: 2rem;
-  background: white;
+  background: var(--color-surface, rgba(24, 24, 27, 0.6));
+  color: var(--color-foreground, #fafafa);
   cursor: pointer;
   transition: all 0.2s;
 }
-.chip.active { background: #4f46e5; color: white; border-color: #4f46e5; }
-.count { font-size: 0.875rem; color: #6b7280; }
+.chip:hover { border-color: rgba(109, 40, 217, 0.3); }
+.chip.active { background: #6d28d9; color: white; border-color: #6d28d9; }
+.count { font-size: 0.875rem; color: var(--color-muted, #a1a1aa); }
 .theme-input { margin: 1rem 0; }
 .theme-input input {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: 0.5rem;
   font-size: 1rem;
+  background: var(--color-surface, #09090b);
+  color: var(--color-foreground, #fafafa);
+}
+.theme-input input:focus {
+  outline: none;
+  border-color: #6d28d9;
+  box-shadow: 0 0 0 2px rgba(109, 40, 217, 0.2);
 }
 .validation-msg { color: #ef4444; font-size: 0.875rem; }
 .start-btn {
   padding: 0.75rem 1.5rem;
-  background: #4f46e5;
+  background: linear-gradient(135deg, #6d28d9, #a78bfa);
   color: white;
   border: none;
   border-radius: 0.5rem;
   font-size: 1rem;
   cursor: pointer;
+  transition: all 0.2s;
 }
+.start-btn:hover:not(:disabled) { box-shadow: 0 0 20px rgba(109, 40, 217, 0.3); }
 .start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

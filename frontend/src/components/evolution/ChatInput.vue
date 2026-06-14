@@ -60,14 +60,14 @@ function handleKeydown(event: KeyboardEvent) {
   display: flex;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  border-top: 1px solid #e5e7eb;
-  background-color: #fff;
+  border-top: 1px solid var(--color-border, rgba(255,255,255,0.08));
+  background-color: var(--color-surface, #18181b);
 }
 
 .chat-input textarea {
   flex: 1;
   resize: none;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border, rgba(255,255,255,0.1));
   border-radius: 0.5rem;
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
@@ -75,15 +75,18 @@ function handleKeydown(event: KeyboardEvent) {
   line-height: 1.5;
   outline: none;
   transition: border-color 0.2s;
+  background-color: var(--color-surface, #09090b);
+  color: var(--color-foreground, #fafafa);
 }
 
 .chat-input textarea:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  border-color: #6d28d9;
+  box-shadow: 0 0 0 2px rgba(109, 40, 217, 0.2);
 }
 
 .chat-input textarea:disabled {
-  background-color: #f9fafb;
+  background-color: var(--color-surface, #18181b);
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -92,24 +95,24 @@ function handleKeydown(event: KeyboardEvent) {
   padding: 0.5rem 1rem;
   border: none;
   border-radius: 0.5rem;
-  background-color: #3b82f6;
+  background: linear-gradient(135deg, #6d28d9, #a78bfa);
   color: #fff;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
 .chat-input button:hover:not(:disabled) {
-  background-color: #2563eb;
+  box-shadow: 0 0 20px rgba(109, 40, 217, 0.3);
 }
 
 .chat-input button:disabled {
-  background-color: #9ca3af;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
 .chat-input button:focus-visible {
-  box-shadow: 0 0 0 2px #3b82f6;
+  box-shadow: 0 0 0 2px #6d28d9;
 }
 </style>
