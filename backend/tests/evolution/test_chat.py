@@ -23,29 +23,51 @@ async def db_path(tmp_path) -> str:
 
 @pytest_asyncio.fixture
 async def mock_routing_engine() -> RoutingEngine:
-  """RoutingEngine のモック。route() が固定レスポンスを返す。"""
+  """RoutingEngine のモック。route()/route_with_tools() が固定レスポンスを返す。"""
   engine = MagicMock(spec=RoutingEngine)
   engine.route = AsyncMock(return_value="Hello! I'm your assistant.")
+  engine.route_with_tools = AsyncMock(return_value="Hello! I'm your assistant.")
   return engine
 
 
 @pytest_asyncio.fixture
 async def mock_clm() -> ContextLayerManager:
-  """ContextLayerManager のモック。get_base_os が正常に返る。"""
+  """ContextLayerManager のモック。get_base_os/get_profile が正常に返る。"""
   clm = MagicMock(spec=ContextLayerManager)
   base_os = MagicMock()
   base_os.decision_style = "analytical"
   base_os.axes = {"extroverted_introverted": 0.7, "thinking_feeling": 0.3}
   base_os.do_not_list = ["Be rude", "Give medical advice"]
   clm.get_base_os = MagicMock(return_value=base_os)
+
+  # get_profile mock for rich prompt
+  profile = MagicMock()
+  profile.persona = MagicMock()
+  profile.persona.nickname = "TestAgent"
+  profile.persona.age_range = ""
+  profile.persona.role = ""
+  profile.persona.industry = ""
+  profile.persona.experience_years = ""
+  profile.communication_tone = MagicMock()
+  profile.communication_tone.pronoun = ""
+  profile.communication_tone.formality = ""
+  profile.communication_tone.text_style = ""
+  profile.communication_tone.emotion_level = ""
+  profile.communication_tone.humor = ""
+  profile.communication_tone.response_length = ""
+  profile.base_os = base_os
+  profile.semantic_contexts = {}
+  profile.lexical_tags = []
+  clm.get_profile = MagicMock(return_value=profile)
   return clm
 
 
 @pytest_asyncio.fixture
 async def mock_clm_no_profile() -> ContextLayerManager:
-  """ContextLayerManager のモック。get_base_os が KeyError を送出する。"""
+  """ContextLayerManager のモック。get_base_os/get_profile が KeyError を送出する。"""
   clm = MagicMock(spec=ContextLayerManager)
   clm.get_base_os = MagicMock(side_effect=KeyError("Profile not loaded"))
+  clm.get_profile = MagicMock(side_effect=KeyError("Profile not loaded"))
   return clm
 
 
@@ -169,11 +191,11 @@ class TestSendMessage:
   async def test_calls_routing_engine(
     self, chat_service: ChatService, mock_routing_engine: RoutingEngine
   ) -> None:
-    """RoutingEngine.route() が呼び出されること。"""
+    """RoutingEngine.route_with_tools() が呼び出されること。"""
     await chat_service.send_message("agent-001", "Test message")
-    mock_routing_engine.route.assert_called_once()
-    call_kwargs = mock_routing_engine.route.call_args
-    assert call_kwargs.kwargs["utterance"] == "Test message"
+    mock_routing_engine.route_with_tools.assert_called_once()
+    call_kwargs = mock_routing_engine.route_with_tools.call_args
+    assert "Test message" in call_kwargs.kwargs["utterance"]
 
   @pytest.mark.asyncio
   async def test_uses_default_prompt_when_profile_missing(
@@ -324,8 +346,10 @@ class TestContextWindow:
     """context_window を超えた古いターンが切り捨てられること。"""
     engine = MagicMock(spec=RoutingEngine)
     engine.route = AsyncMock(return_value="Response")
+    engine.route_with_tools = AsyncMock(return_value="Response")
     clm = MagicMock(spec=ContextLayerManager)
     clm.get_base_os = MagicMock(side_effect=KeyError("not loaded"))
+    clm.get_profile = MagicMock(side_effect=KeyError("not loaded"))
 
     # context_window=4 に設定（最新4ターンのみ保持）
     svc = ChatService(

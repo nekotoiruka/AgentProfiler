@@ -16,7 +16,11 @@ import aiosqlite
 
 from app.evolution.agent_manager import AgentManager
 from app.evolution.context_layer_manager import ContextLayerManager
-from app.evolution.routing_engine import RoutingEngine
+from app.evolution.memory_utils import (
+  build_rich_system_prompt,
+  execute_search_memory,
+)
+from app.evolution.routing_engine import MEMORY_SEARCH_TOOL, RoutingEngine
 
 logger = logging.getLogger(__name__)
 
@@ -175,14 +179,17 @@ class DiscussionEngine:
       各ターンの DiscussionTurn
     """
     total_turns = max_turns_per_agent * len(agent_ids)
-    # エージェント表示名を事前に取得
+    # エージェント表示名と profile_id を事前に取得
     agent_display_names: dict[str, str] = {}
+    agent_profile_ids: dict[str, str] = {}
     for agent_id in agent_ids:
       record = await self._agent_manager.get(agent_id)
       if record:
         agent_display_names[agent_id] = record.display_name
+        agent_profile_ids[agent_id] = record.profile_id
       else:
         agent_display_names[agent_id] = agent_id
+        agent_profile_ids[agent_id] = ""
 
     # 議論の累積履歴（全ターンのテキスト）
     history: list[dict[str, str]] = []
@@ -192,17 +199,37 @@ class DiscussionEngine:
       agent_idx = (turn_number - 1) % len(agent_ids)
       agent_id = agent_ids[agent_idx]
       display_name = agent_display_names[agent_id]
+      profile_id = agent_profile_ids[agent_id]
 
-      # エージェント固有のシステムプロンプトを構築
-      system_prompt = self._build_system_prompt(agent_id, theme, agent_ids, agent_display_names)
+      # エージェント固有のリッチシステムプロンプトを構築
+      other_names = [
+        agent_display_names.get(aid, aid)
+        for aid in agent_ids if aid != agent_id
+      ]
+      system_prompt = self._build_system_prompt(
+        agent_id, profile_id, theme, agent_ids, agent_display_names
+      )
 
       # ユーザーメッセージ: テーマ + これまでの会話履歴
       utterance = self._build_utterance(theme, history, display_name)
 
-      # RoutingEngine 経由で LLM にリクエスト
-      response = await self._routing_engine.route(
+      # Responses API + Function Calling でツール付き推論
+      # 各エージェントが自分の記憶を検索できる
+      async def _make_tool_executor(pid: str):
+        """クロージャで profile_id をキャプチャする"""
+        async def executor(name: str, args: dict) -> str:
+          return await execute_search_memory(
+            name, args, pid, self._clm
+          )
+        return executor
+
+      tool_executor = await _make_tool_executor(profile_id)
+
+      response = await self._routing_engine.route_with_tools(
         utterance=utterance,
         system_prompt=system_prompt,
+        tools=[MEMORY_SEARCH_TOOL],
+        tool_executor=tool_executor,
       )
 
       timestamp = datetime.now(timezone.utc).isoformat()
@@ -306,17 +333,19 @@ class DiscussionEngine:
   def _build_system_prompt(
     self,
     agent_id: str,
+    profile_id: str,
     theme: str,
     agent_ids: list[str],
     agent_display_names: dict[str, str],
   ) -> str:
-    """エージェント固有のシステムプロンプトを構築する。
+    """エージェント固有のリッチなシステムプロンプトを構築する。
 
-    Base OS からパーソナリティ特性を取得し、
-    議論コンテキスト（テーマ・参加者）を含むプロンプトを生成する。
+    ProfileOutput 全体（persona, communication_tone, semantic_contexts, lexical_tags）
+    + 議論コンテキスト（テーマ・他参加者）を含むプロンプトを生成する。
 
     Args:
       agent_id: 現在発話するエージェント ID
+      profile_id: エージェントに紐づく profile_id
       theme: 議論テーマ
       agent_ids: 全参加エージェント ID
       agent_display_names: エージェント ID → 表示名のマッピング
@@ -324,56 +353,30 @@ class DiscussionEngine:
     Returns:
       システムプロンプト文字列
     """
-    try:
-      # AgentManager から profile_id を取得する代わりに、
-      # PoC 段階では agent_id をそのまま CLM に渡す
-      # (ChatService と同じパターン)
-      base_os = self._clm.get_base_os(agent_id)
-      parts = [
-        f"You are {agent_display_names.get(agent_id, agent_id)}, "
-        f"participating in a group discussion about: {theme}",
-        "",
-        "Your personality:",
-        f"  Decision style: {base_os.decision_style}",
-      ]
-      if base_os.axes:
-        parts.append("  Personality axes:")
-        axes_dict = (
-          base_os.axes.model_dump()
-          if hasattr(base_os.axes, "model_dump")
-          else vars(base_os.axes)
-        )
-        for axis_name, score in axes_dict.items():
-          parts.append(f"    - {axis_name}: {score}")
-      if base_os.do_not_list:
-        parts.append("  You MUST NOT:")
-        for item in base_os.do_not_list:
-          parts.append(f"    - {item}")
+    display_name = agent_display_names.get(agent_id, agent_id)
+    other_names = [
+      agent_display_names.get(aid, aid)
+      for aid in agent_ids if aid != agent_id
+    ]
 
-      # 他の参加者情報を追加
-      other_agents = [
-        agent_display_names.get(aid, aid)
-        for aid in agent_ids
-        if aid != agent_id
-      ]
-      parts.append("")
-      parts.append(f"Other participants: {', '.join(other_agents)}")
-      parts.append("")
-      parts.append(
-        "Respond naturally as your character. Be concise and engaging. "
-        "Build on what others have said."
+    try:
+      profile = self._clm.get_profile(profile_id)
+      return build_rich_system_prompt(
+        profile=profile,
+        agent_display_name=display_name,
+        theme=theme,
+        other_participants=other_names,
       )
-      return "\n".join(parts)
-    except (KeyError, AttributeError):
-      # Base OS が取得できない場合はデフォルトプロンプト
+    except (KeyError, AttributeError) as e:
       logger.warning(
-        "Failed to build system prompt for agent_id=%s, using default",
-        agent_id,
+        "Failed to build rich system prompt for agent_id=%s: %s, using fallback",
+        agent_id, e,
       )
       return (
-        f"You are {agent_display_names.get(agent_id, agent_id)}, "
-        f"participating in a group discussion about: {theme}. "
-        "Respond naturally and concisely."
+        f"あなたは「{display_name}」です。"
+        f"テーマ「{theme}」について議論しています。"
+        f"他の参加者: {', '.join(other_names)}。"
+        "自分の人格として自然に発言してください。"
       )
 
   def _build_utterance(
