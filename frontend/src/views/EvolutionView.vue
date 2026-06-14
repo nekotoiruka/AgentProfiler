@@ -9,20 +9,34 @@ import { useChat } from '@/components/evolution/composables/useChat'
 import { useDiscussion } from '@/components/evolution/composables/useDiscussion'
 import { apiFetch } from '@/composables/useApi'
 
-type Tab = 'agents' | 'chat' | 'discussion'
+type Tab = 'agents' | 'chat' | 'discussion' | 'registry'
 const activeTab = ref<Tab>('agents')
 
-const { agents, loading: agentsLoading, listAgents, createAgent } = useAgents()
+const { agents, registry, loading: agentsLoading, listAgents, listRegistry, createAgent, publishAgent, unpublishAgent } = useAgents()
 const profiles = ref<{ profile_id: string }[]>([])
 const selectedProfileId = ref<string | null>(null)
 const newAgentName = ref('')
 const createError = ref<string | null>(null)
+const showPublishDialog = ref(false)
+const publishTargetAgent = ref<Agent | null>(null)
 
 const selectedAgent = ref<Agent | null>(null)
 const { messages, streaming, loading: chatLoading, sendMessage, switchThread } = useChat()
-const { turns, discussionId, streaming: discStreaming, progress, totalExpectedTurns, startDiscussion, reset: resetDiscussion } = useDiscussion()
+const { turns, discussionId, streaming: discStreaming, progress, totalExpectedTurns, summary, summaryLoading, startDiscussion, generateSummary, reset: resetDiscussion } = useDiscussion()
 
 const hasAgents = computed(() => agents.value.length > 0)
+
+/** ディスカッション用: 自分のエージェント + レジストリの公開ペルソナを結合（重複排除） */
+const allAvailableAgents = computed(() => {
+  const idSet = new Set(agents.value.map(a => a.agent_id))
+  const combined = [...agents.value]
+  for (const r of registry.value) {
+    if (!idSet.has(r.agent_id)) {
+      combined.push(r)
+    }
+  }
+  return combined
+})
 
 async function loadProfiles() {
   try {
@@ -54,8 +68,38 @@ function handleStartDiscussion(agentIds: string[], theme: string) {
   startDiscussion(agentIds, theme, 5)
 }
 
+function openPublishDialog(agent: Agent) {
+  publishTargetAgent.value = agent
+  showPublishDialog.value = true
+}
+
+async function confirmPublish() {
+  if (!publishTargetAgent.value) return
+  const ok = await publishAgent(publishTargetAgent.value.agent_id)
+  if (ok) {
+    await listAgents()
+    await listRegistry()
+  }
+  showPublishDialog.value = false
+  publishTargetAgent.value = null
+}
+
+async function handleUnpublish(agentId: string) {
+  await unpublishAgent(agentId)
+  await listAgents()
+  await listRegistry()
+}
+
+/** Agent Pack Zip をダウンロードする */
+function downloadPackage(agentId: string) {
+  const baseUrl = import.meta.env.VITE_API_URL || '/api'
+  const url = `${baseUrl}/v1/evolution/agents/${agentId}/package`
+  window.open(url, '_blank')
+}
+
 onMounted(async () => {
   await listAgents()
+  await listRegistry()
   await loadProfiles()
   const pid = new URLSearchParams(window.location.search).get('profile_id')
   if (pid) selectedProfileId.value = pid
@@ -80,6 +124,7 @@ onMounted(async () => {
       <button
         v-for="tab in ([
           { id: 'agents' as Tab, label: 'エージェント', icon: '◆' },
+          { id: 'registry' as Tab, label: 'レジストリ', icon: '◎' },
           { id: 'chat' as Tab, label: 'チャット', icon: '◇' },
           { id: 'discussion' as Tab, label: 'ディスカッション', icon: '△' },
         ])"
@@ -163,11 +208,87 @@ onMounted(async () => {
               <div class="font-semibold text-sm truncate group-hover:text-accent transition-colors">{{ agent.display_name }}</div>
               <div class="text-[10px] text-muted-foreground mt-0.5 font-mono">{{ agent.profile_id }}</div>
             </div>
+            <button
+              class="text-[10px] px-2 py-1 rounded-md bg-surface text-muted-foreground hover:bg-surface-hover hover:text-foreground transition-colors"
+              @click.stop="downloadPackage(agent.agent_id)"
+              title="Agent Pack Zip"
+            >
+              📦
+            </button>
+            <button
+              class="text-[10px] px-2 py-1 rounded-md bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
+              @click.stop="openPublishDialog(agent)"
+            >
+              公開
+            </button>
             <div class="text-muted-foreground group-hover:text-accent group-hover:translate-x-1 transition-all">→</div>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- ===== REGISTRY TAB ===== -->
+    <section v-if="activeTab === 'registry'">
+      <div class="glass rounded-2xl p-6 mb-6">
+        <h2 class="text-sm font-bold text-accent mb-2 tracking-wide uppercase">Persona Registry</h2>
+        <p class="text-xs text-muted-foreground mb-4">公開された分身ペルソナ。チャットや議論の相手として選択できます。</p>
+      </div>
+      <div v-if="registry.length === 0" class="text-center py-16">
+        <p class="text-muted-foreground text-sm">まだ公開されたペルソナはありません</p>
+        <p class="text-xs text-muted-foreground mt-2">エージェントタブから分身を公開してください</p>
+      </div>
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div
+          v-for="agent in registry"
+          :key="agent.agent_id"
+          class="glass rounded-2xl p-5 cursor-pointer group hover:glow hover:border-cyan-500/20 transition-all duration-300"
+          @click="selectAgent(agent)"
+        >
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/30 to-accent/20 flex items-center justify-center text-lg font-bold text-cyan-400 group-hover:scale-110 transition-transform">
+              {{ agent.display_name.charAt(0) }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-sm truncate group-hover:text-cyan-400 transition-colors">{{ agent.display_name }}</div>
+              <div class="flex items-center gap-1 mt-0.5">
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-medium">PUBLIC</span>
+              </div>
+            </div>
+            <div class="text-muted-foreground group-hover:text-cyan-400 group-hover:translate-x-1 transition-all">→</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Publish Confirm Dialog -->
+    <Teleport to="body">
+      <div v-if="showPublishDialog" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showPublishDialog = false" />
+        <div class="relative glass rounded-2xl p-8 max-w-md w-full mx-4">
+          <h3 class="text-lg font-bold mb-3">この分身を公開しますか？</h3>
+          <p class="text-sm text-muted-foreground mb-2">
+            <strong class="text-accent">{{ publishTargetAgent?.display_name }}</strong> を公開レジストリに登録します。
+          </p>
+          <p class="text-xs text-muted-foreground mb-6">
+            公開されたペルソナは他のユーザーからチャットや議論の相手として選択されるようになります。いつでも非公開に戻せます。
+          </p>
+          <div class="flex gap-3 justify-end">
+            <button
+              class="px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground transition-colors"
+              @click="showPublishDialog = false"
+            >
+              キャンセル
+            </button>
+            <button
+              class="px-5 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-accent text-white text-sm font-semibold hover:glow transition-all"
+              @click="confirmPublish"
+            >
+              公開する
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- ===== CHAT TAB ===== -->
     <section v-if="activeTab === 'chat'" class="glass rounded-2xl overflow-hidden" style="height: calc(100vh - 240px); min-height: 400px;">
@@ -213,7 +334,7 @@ onMounted(async () => {
         <div class="glass rounded-2xl p-6">
           <h2 class="text-sm font-bold text-accent mb-2 tracking-wide uppercase">Multi-Agent Discussion</h2>
           <p class="text-xs text-muted-foreground mb-6">複数の分身にテーマを与え、自律的な議論を観察します</p>
-          <DiscussionSetup :agents="agents" @start="handleStartDiscussion" />
+          <DiscussionSetup :agents="allAvailableAgents" @start="handleStartDiscussion" />
           <p v-if="agents.length < 2" class="text-xs text-muted-foreground mt-4">
             ディスカッションには2体以上のエージェントが必要です
           </p>
@@ -235,6 +356,44 @@ onMounted(async () => {
         >
           ↺ 新しいディスカッション
         </button>
+        <!-- Insight Summary -->
+        <div v-if="!discStreaming" class="mt-4">
+          <button
+            v-if="!summary"
+            :disabled="summaryLoading"
+            class="px-5 py-2 rounded-xl bg-gradient-to-r from-primary to-accent text-white text-sm font-semibold disabled:opacity-30 hover:glow transition-all"
+            @click="generateSummary"
+          >
+            {{ summaryLoading ? '分析中...' : '💡 インサイトを抽出' }}
+          </button>
+          <div v-if="summary" class="glass rounded-2xl p-6 mt-4 space-y-4">
+            <h3 class="text-sm font-bold text-accent tracking-wide uppercase">Insights</h3>
+            <div v-if="summary.key_insights.length">
+              <h4 class="text-xs font-semibold text-foreground mb-2">💡 主要な気づき</h4>
+              <ul class="space-y-1">
+                <li v-for="(insight, i) in summary.key_insights" :key="i" class="text-xs text-muted-foreground pl-3 border-l-2 border-accent/30">{{ insight }}</li>
+              </ul>
+            </div>
+            <div v-if="summary.disagreements.length">
+              <h4 class="text-xs font-semibold text-foreground mb-2">⚡ 対立点</h4>
+              <ul class="space-y-1">
+                <li v-for="(d, i) in summary.disagreements" :key="i" class="text-xs text-muted-foreground pl-3 border-l-2 border-red-400/30">{{ d }}</li>
+              </ul>
+            </div>
+            <div v-if="summary.unexpected_perspectives.length">
+              <h4 class="text-xs font-semibold text-foreground mb-2">🔮 予想外の視点</h4>
+              <ul class="space-y-1">
+                <li v-for="(p, i) in summary.unexpected_perspectives" :key="i" class="text-xs text-muted-foreground pl-3 border-l-2 border-cyan-400/30">{{ p }}</li>
+              </ul>
+            </div>
+            <div v-if="summary.actionable_suggestions.length">
+              <h4 class="text-xs font-semibold text-foreground mb-2">🎯 アクション提案</h4>
+              <ul class="space-y-1">
+                <li v-for="(s, i) in summary.actionable_suggestions" :key="i" class="text-xs text-muted-foreground pl-3 border-l-2 border-emerald-400/30">{{ s }}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </template>
     </section>
   </div>

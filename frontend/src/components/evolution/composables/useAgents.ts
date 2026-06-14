@@ -4,6 +4,7 @@
  *
  * リアクティブなエージェント一覧状態管理と
  * Agent Manager API へのクライアント操作を提供する。
+ * ペルソナレジストリ（公開/非公開）の管理を含む。
  */
 
 import { ref } from 'vue'
@@ -19,6 +20,7 @@ export interface Agent {
 
 export function useAgents() {
   const agents = ref<Agent[]>([])
+  const registry = ref<Agent[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -31,6 +33,19 @@ export function useAgents() {
         ? `/v1/evolution/agents?profile_id=${profileId}`
         : '/v1/evolution/agents'
       agents.value = await apiFetch<Agent[]>(url)
+    } catch (e: any) {
+      error.value = e.message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /** 公開済みペルソナレジストリ（全ユーザー横断）を取得 */
+  async function listRegistry() {
+    loading.value = true
+    error.value = null
+    try {
+      registry.value = await apiFetch<Agent[]>('/v1/evolution/agents/registry')
     } catch (e: any) {
       error.value = e.message
     } finally {
@@ -60,6 +75,30 @@ export function useAgents() {
     }
   }
 
+  /** エージェントを公開する（明示的承認） */
+  async function publishAgent(agentId: string): Promise<boolean> {
+    error.value = null
+    try {
+      await apiFetch(`/v1/evolution/agents/${agentId}/publish`, { method: 'POST' })
+      return true
+    } catch (e: any) {
+      error.value = e.message
+      return false
+    }
+  }
+
+  /** エージェントを非公開に戻す */
+  async function unpublishAgent(agentId: string): Promise<boolean> {
+    error.value = null
+    try {
+      await apiFetch(`/v1/evolution/agents/${agentId}/unpublish`, { method: 'POST' })
+      return true
+    } catch (e: any) {
+      error.value = e.message
+      return false
+    }
+  }
+
   /** エージェントを論理削除しローカル状態から除外 */
   async function deleteAgent(agentId: string) {
     try {
@@ -70,5 +109,16 @@ export function useAgents() {
     }
   }
 
-  return { agents, loading, error, listAgents, createAgent, deleteAgent }
+  return {
+    agents,
+    registry,
+    loading,
+    error,
+    listAgents,
+    listRegistry,
+    createAgent,
+    publishAgent,
+    unpublishAgent,
+    deleteAgent,
+  }
 }

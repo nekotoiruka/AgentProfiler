@@ -4,9 +4,11 @@
  *
  * SSE ストリーミングによるターン受信、議論状態管理、プログレス計算を提供する。
  * fetch + ReadableStream を使用し、サーバーからのターンイベントを逐次パースする。
+ * 議論完了後のインサイトサマリー生成・取得をサポート。
  */
 
 import { ref, computed } from 'vue'
+import { apiFetch } from '@/composables/useApi'
 
 export interface DiscussionTurn {
   discussion_id: string
@@ -17,12 +19,23 @@ export interface DiscussionTurn {
   timestamp: string
 }
 
+export interface InsightSummary {
+  discussion_id: string
+  key_insights: string[]
+  disagreements: string[]
+  unexpected_perspectives: string[]
+  actionable_suggestions: string[]
+  generated_at: string
+}
+
 export function useDiscussion() {
   const turns = ref<DiscussionTurn[]>([])
   const discussionId = ref<string | null>(null)
   const streaming = ref(false)
   const error = ref<string | null>(null)
   const totalExpectedTurns = ref(0)
+  const summary = ref<InsightSummary | null>(null)
+  const summaryLoading = ref(false)
 
   /** 現在のプログレス (0–100) */
   const progress = computed(() => {
@@ -44,6 +57,7 @@ export function useDiscussion() {
     streaming.value = true
     error.value = null
     turns.value = []
+    summary.value = null
     totalExpectedTurns.value = maxTurnsPerAgent * agentIds.length
 
     try {
@@ -97,6 +111,40 @@ export function useDiscussion() {
     }
   }
 
+  /** 議論完了後のインサイトサマリーを生成する */
+  async function generateSummary(): Promise<InsightSummary | null> {
+    if (!discussionId.value) return null
+    summaryLoading.value = true
+    error.value = null
+    try {
+      const result = await apiFetch<InsightSummary>(
+        `/v1/evolution/discussions/${discussionId.value}/summary`,
+        { method: 'POST' },
+      )
+      summary.value = result
+      return result
+    } catch (e: any) {
+      error.value = e.message
+      return null
+    } finally {
+      summaryLoading.value = false
+    }
+  }
+
+  /** キャッシュ済みサマリーを取得する */
+  async function getSummary(): Promise<InsightSummary | null> {
+    if (!discussionId.value) return null
+    try {
+      const result = await apiFetch<InsightSummary>(
+        `/v1/evolution/discussions/${discussionId.value}/summary`,
+      )
+      summary.value = result
+      return result
+    } catch {
+      return null
+    }
+  }
+
   /** 状態をリセットして新規議論に備える */
   function reset() {
     turns.value = []
@@ -104,6 +152,8 @@ export function useDiscussion() {
     streaming.value = false
     error.value = null
     totalExpectedTurns.value = 0
+    summary.value = null
+    summaryLoading.value = false
   }
 
   return {
@@ -113,7 +163,11 @@ export function useDiscussion() {
     error,
     progress,
     totalExpectedTurns,
+    summary,
+    summaryLoading,
     startDiscussion,
+    generateSummary,
+    getSummary,
     reset,
   }
 }
