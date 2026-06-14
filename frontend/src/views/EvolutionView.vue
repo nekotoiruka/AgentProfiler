@@ -291,10 +291,10 @@ onMounted(async () => {
     </Teleport>
 
     <!-- ===== CHAT TAB ===== -->
-    <section v-if="activeTab === 'chat'" class="glass rounded-2xl overflow-hidden" style="height: calc(100vh - 240px); min-height: 400px;">
+    <section v-if="activeTab === 'chat'" class="glass rounded-2xl overflow-hidden flex flex-col" style="height: calc(100vh - 320px); min-height: 300px;">
       <template v-if="selectedAgent">
         <!-- Chat header -->
-        <div class="flex items-center gap-3 px-5 py-3 border-b border-white/5">
+        <div class="flex items-center gap-3 px-5 py-3 border-b border-white/5 shrink-0">
           <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/30 to-accent/20 flex items-center justify-center text-sm font-bold text-accent">
             {{ selectedAgent.display_name.charAt(0) }}
           </div>
@@ -313,12 +313,14 @@ onMounted(async () => {
         </div>
 
         <!-- Messages -->
-        <div class="flex-1 overflow-y-auto" style="height: calc(100% - 120px);">
+        <div class="flex-1 overflow-y-auto min-h-0">
           <ChatThread :messages="messages" :streaming="streaming" />
         </div>
 
         <!-- Input -->
-        <ChatInput :disabled="chatLoading || streaming" @send="handleSend" />
+        <div class="shrink-0">
+          <ChatInput :disabled="chatLoading || streaming" @send="handleSend" />
+        </div>
       </template>
       <div v-else class="h-full flex items-center justify-center">
         <div class="text-center">
