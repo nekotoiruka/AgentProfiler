@@ -174,11 +174,21 @@ class PackageGenerator:
     for path, content in skills:
       files[path] = content
 
+    # Decision Engine: skills/decision-rules/SKILL.md
+    decision_rules_skill = self._generate_decision_rules_skill(profile)
+    if decision_rules_skill is not None:
+      files["skills/decision-rules/SKILL.md"] = decision_rules_skill
+
     # tools/ 生成
     files["tools/project_context.json"] = self._generate_project_context(profile)
     tools = self._generate_additional_tools(profile)
     for path, content in tools:
       files[path] = content
+
+    # Decision Engine: tools/reasoning_flow.json
+    reasoning_flow_tool = self._generate_reasoning_flow_tool(profile)
+    if reasoning_flow_tool is not None:
+      files["tools/reasoning_flow.json"] = reasoning_flow_tool
 
     logger.info(
       "Package generated for agent_id=%s: %d files", agent_id, len(files)
@@ -287,16 +297,35 @@ class PackageGenerator:
       "tools": tool_paths,
     }
 
+    # Decision Engine: context_adaptation をconfig に追加
+    if profile.context_adaptation is not None:
+      config["context_adaptation"] = {
+        "modes": profile.context_adaptation.modes,
+        "switch_triggers": profile.context_adaptation.switch_triggers,
+      }
+
     return json.dumps(config, indent=2, ensure_ascii=False)
 
   def _generate_system_prompt_md(self, profile: ProfileOutput) -> str:
     """system_prompt.md: PromptEngine 出力を Markdown 形式で保存する。
 
     persona/communication_tone が欠落している場合は [CUSTOMIZE] マークを付与。
+    Decision Engine データがある場合は追加セクションを挿入。
     """
     # PromptEngine でプロンプト生成
     result = self._prompt_engine.generate(profile)
     prompt_content = result.prompt
+
+    # Decision Engine: "## Decision Framework" セクション追加
+    # PromptEngine が既に Decision Framework を生成している場合はスキップ
+    decision_framework_section = self._build_decision_framework_section(profile)
+    if decision_framework_section and "## Decision Framework" not in prompt_content:
+      prompt_content += "\n\n" + decision_framework_section
+
+    # Decision Engine: "## Self-Awareness" セクション追加
+    self_awareness_section = self._build_self_awareness_section(profile)
+    if self_awareness_section:
+      prompt_content += "\n\n" + self_awareness_section
 
     # communication_tone の有無を判定
     tone = profile.communication_tone
@@ -484,6 +513,191 @@ class PackageGenerator:
       ))
 
     return results
+
+  def _build_decision_framework_section(
+    self, profile: ProfileOutput
+  ) -> str | None:
+    """system_prompt.md 用の Decision Framework セクションを構築する。
+
+    decision_model が無い場合は None を返す。
+    """
+    if profile.decision_model is None:
+      return None
+
+    dm = profile.decision_model
+    lines = ["## Decision Framework", ""]
+
+    # priorities を weight 降順でリスト
+    if dm.priority_weights:
+      sorted_priorities = sorted(
+        dm.priority_weights.items(),
+        key=lambda x: x[1],
+        reverse=True,
+      )
+      for name, weight in sorted_priorities:
+        lines.append(f"- {name} (weight: {weight})")
+    elif dm.priorities:
+      for p in dm.priorities:
+        lines.append(f"- {p}")
+
+    # tradeoff_tendencies
+    if dm.tradeoff_tendencies:
+      lines.append("")
+      lines.append("### Tradeoff Tendencies")
+      for pair, score in dm.tradeoff_tendencies.items():
+        lines.append(f"- {pair}: {score}")
+
+    return "\n".join(lines)
+
+  def _build_self_awareness_section(
+    self, profile: ProfileOutput
+  ) -> str | None:
+    """system_prompt.md 用の Self-Awareness セクションを構築する。
+
+    failure_patterns が無い場合は None を返す。
+    全4サブカテゴリ（degradation_triggers, procrastination_patterns,
+    overconfidence_conditions, recurring_mistakes）をカテゴリ別に列挙。
+    """
+    if profile.failure_patterns is None:
+      return None
+
+    fp = profile.failure_patterns
+    # サブカテゴリが全て空の場合もスキップ
+    if not any([
+      fp.degradation_triggers,
+      fp.procrastination_patterns,
+      fp.overconfidence_conditions,
+      fp.recurring_mistakes,
+    ]):
+      return None
+
+    lines = ["## Self-Awareness", ""]
+
+    if fp.degradation_triggers:
+      lines.append("### Degradation Triggers")
+      for trigger in fp.degradation_triggers:
+        lines.append(f"- ⚠️ {trigger}")
+      lines.append("")
+
+    if fp.procrastination_patterns:
+      lines.append("### Procrastination Patterns")
+      for pattern in fp.procrastination_patterns:
+        lines.append(f"- 🕐 {pattern}")
+      lines.append("")
+
+    if fp.overconfidence_conditions:
+      lines.append("### Overconfidence Conditions")
+      for condition in fp.overconfidence_conditions:
+        lines.append(f"- 🔴 {condition}")
+      lines.append("")
+
+    if fp.recurring_mistakes:
+      lines.append("### Recurring Mistakes")
+      for mistake in fp.recurring_mistakes:
+        lines.append(f"- 🔄 {mistake}")
+      lines.append("")
+
+    return "\n".join(lines).rstrip()
+
+  def _generate_decision_rules_skill(
+    self, profile: ProfileOutput
+  ) -> str | None:
+    """skills/decision-rules/SKILL.md を生成する。
+
+    decision_model が無い場合は None を返す（後方互換性）。
+    YAML frontmatter + Escalation Rules + Auto-Approve Scope + Tradeoff Tendencies。
+    """
+    if profile.decision_model is None:
+      return None
+
+    dm = profile.decision_model
+
+    # YAML frontmatter（既存 SKILL.md と同じフォーマット）
+    frontmatter = (
+      "---\n"
+      "name: decision-rules\n"
+      "description: Defines escalation rules, auto-approve scope, "
+      "and tradeoff tendencies for autonomous decision-making. "
+      "Use when determining whether to act autonomously or escalate "
+      "to the user for approval.\n"
+      "metadata:\n"
+      f"  generated-by: agent-profiler\n"
+      f"  profile-id: {profile.profile_id}\n"
+      "  version: \"1.0\"\n"
+      "---\n"
+    )
+
+    body_lines = [
+      "",
+      "# Decision Rules Skill",
+      "",
+      "## When to use",
+      "- Agent needs to decide whether to act autonomously or escalate",
+      "- Agent encounters a tradeoff scenario",
+      "- Agent needs to determine appropriate scope of action",
+      "",
+    ]
+
+    # Escalation Rules
+    body_lines.append("## Escalation Rules")
+    body_lines.append("")
+    if dm.escalation_rules:
+      for rule in dm.escalation_rules:
+        body_lines.append(f"- {rule}")
+    else:
+      body_lines.append("- No escalation rules defined")
+    body_lines.append("")
+
+    # Auto-Approve Scope
+    body_lines.append("## Auto-Approve Scope")
+    body_lines.append("")
+    if dm.auto_approve_scope:
+      for scope in dm.auto_approve_scope:
+        body_lines.append(f"- {scope}")
+    else:
+      body_lines.append("- No auto-approve scope defined")
+    body_lines.append("")
+
+    # Tradeoff Tendencies
+    body_lines.append("## Tradeoff Tendencies")
+    body_lines.append("")
+    if dm.tradeoff_tendencies:
+      body_lines.append("| Dimension | Score | Interpretation |")
+      body_lines.append("|-----------|-------|----------------|")
+      for pair, score in dm.tradeoff_tendencies.items():
+        # スコアの解釈: 0.0-0.3=前者寄り, 0.4-0.6=バランス, 0.7-1.0=後者寄り
+        if score <= 0.3:
+          interpretation = "Leans toward first value"
+        elif score >= 0.7:
+          interpretation = "Leans toward second value"
+        else:
+          interpretation = "Balanced"
+        body_lines.append(f"| {pair} | {score} | {interpretation} |")
+    else:
+      body_lines.append("- No tradeoff tendencies defined")
+    body_lines.append("")
+
+    return frontmatter + "\n".join(body_lines)
+
+  def _generate_reasoning_flow_tool(
+    self, profile: ProfileOutput
+  ) -> str | None:
+    """tools/reasoning_flow.json を生成する。
+
+    reasoning_flow が無い場合は None を返す（後方互換性）。
+    UTF-8, 2-space indent JSON。
+    """
+    if profile.reasoning_flow is None:
+      return None
+
+    rf = profile.reasoning_flow
+    data = {
+      "default_steps": rf.default_steps,
+      "verification_method": rf.verification_method,
+      "learning_style": rf.learning_style,
+    }
+
+    return json.dumps(data, indent=2, ensure_ascii=False)
 
   def build_zip(
     self, profile: ProfileOutput, agent_id: str, display_name: str

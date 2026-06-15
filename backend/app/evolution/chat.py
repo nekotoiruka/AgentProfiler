@@ -4,11 +4,13 @@
 SSE ストリーミングレスポンスをサポートする。
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import AsyncGenerator
+from typing import TYPE_CHECKING, AsyncGenerator
 
 import aiosqlite
 
@@ -19,6 +21,10 @@ from app.evolution.memory_utils import (
   get_answer_summaries,
 )
 from app.evolution.routing_engine import RoutingEngine
+
+if TYPE_CHECKING:
+  from app.decision_engine.mode_detector import ModeDetector
+  from app.models.profile import ProfileOutput
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +45,7 @@ class ChatService:
     context_layer_manager: ContextLayerManager,
     agent_manager=None,
     context_window: int = 20,
+    mode_detector: ModeDetector | None = None,
   ):
     """ChatService を初期化する。
 
@@ -48,14 +55,18 @@ class ChatService:
       context_layer_manager: 3層コンテキスト管理
       agent_manager: agent_id → profile_id 解決用 AgentManager
       context_window: LLM コンテキストに含む直近ターン数（デフォルト20）
+      mode_detector: コンテキスト適応モード検出エンジン（None の場合モード検出スキップ）
     """
     self._db_path = db_path
     self._routing_engine = routing_engine
     self._clm = context_layer_manager
     self._agent_manager = agent_manager
     self._context_window = context_window
+    self._mode_detector = mode_detector
     # agent_id → profile_id のインメモリキャッシュ（DB アクセス削減）
     self._profile_id_cache: dict[str, str] = {}
+    # failure_patterns インデックス済みフラグ（agent_id → indexed）
+    self._failure_indexed: dict[str, bool] = {}
 
   async def init_db(self) -> None:
     """threads テーブルとインデックスを初期化する。"""
@@ -102,11 +113,18 @@ class ChatService:
     # agent_id → profile_id を事前に解決してキャッシュ
     await self._resolve_profile_id(agent_id)
 
+    # failure_patterns のインデックス（初回のみ）
+    if not self._failure_indexed.get(agent_id):
+      await self._try_index_failure_patterns(agent_id)
+
     # 直近の会話履歴を取得（コンテキストウィンドウ分）
     history = await self._get_recent_history(thread_id, self._context_window)
 
     # Base OS からシステムプロンプトを構築
     system_prompt = self._build_system_prompt(agent_id)
+
+    # コンテキスト適応モード検出 → システムプロンプト追記
+    system_prompt = self._detect_and_apply_mode(agent_id, message, system_prompt, history)
 
     # Responses API + function calling でツール付き推論
     # search_memory ツールでペルソナの記憶/経験を検索可能にする
@@ -250,6 +268,116 @@ class ChatService:
         agent_id, e,
       )
       return "You are a helpful AI assistant."
+
+  def _detect_and_apply_mode(
+    self,
+    agent_id: str,
+    message: str,
+    system_prompt: str,
+    recent_history: list[dict] | None = None,
+  ) -> str:
+    """モード検出 → システムプロンプト追記。
+
+    ModeDetector が未設定またはプロファイルに context_adaptation がない場合は
+    スキップし、性能ペナルティなしで元のプロンプトをそのまま返す。
+
+    Args:
+      agent_id: 対象エージェント ID
+      message: ユーザーメッセージ
+      system_prompt: 現在のシステムプロンプト
+      recent_history: 直近の会話履歴（ターンリスト）
+
+    Returns:
+      モード適用後のシステムプロンプト（変更なしの場合は元のまま）
+    """
+    if self._mode_detector is None:
+      return system_prompt
+
+    recent_turns = recent_history or []
+    mode_name = self._mode_detector.detect_mode(message, recent_turns)
+    if mode_name is None:
+      return system_prompt
+
+    mode_prompt = self._mode_detector.format_mode_prompt(mode_name)
+    if not mode_prompt:
+      return system_prompt
+
+    # モード設定をシステムプロンプト末尾に追記
+    return f"{system_prompt}\n\n{mode_prompt}"
+
+  async def _try_index_failure_patterns(self, agent_id: str) -> None:
+    """failure_patterns のインデックスを試行する（エラー時はスキップ）。
+
+    Args:
+      agent_id: 対象エージェント ID
+    """
+    try:
+      profile_id = self._profile_id_cache.get(agent_id)
+      lookup_key = profile_id or agent_id
+      profile = self._clm.get_profile(lookup_key)
+      await self._index_failure_patterns(profile)
+      self._failure_indexed[agent_id] = True
+    except (KeyError, AttributeError) as e:
+      # プロファイル未ロード時はスキップ
+      logger.debug(
+        "Skipping failure_patterns indexing for agent_id=%s: %s",
+        agent_id, e,
+      )
+      self._failure_indexed[agent_id] = True
+
+  async def _index_failure_patterns(self, profile: ProfileOutput) -> None:
+    """failure_patterns を search_memory 用にインデックスする。
+
+    degradation_triggers と recurring_mistakes を
+    semantic_contexts として登録し、検索可能にする。
+    プロファイルに failure_patterns がない場合はスキップ。
+
+    Args:
+      profile: ProfileOutput インスタンス
+    """
+    if not hasattr(profile, "failure_patterns") or profile.failure_patterns is None:
+      return
+
+    fp = profile.failure_patterns
+    entries: dict[str, str] = {}
+
+    # degradation_triggers をインデックス
+    if fp.degradation_triggers:
+      entries["degradation_triggers"] = (
+        "パフォーマンス劣化の引き金: " + "; ".join(fp.degradation_triggers)
+      )
+
+    # recurring_mistakes をインデックス
+    if fp.recurring_mistakes:
+      entries["recurring_mistakes"] = (
+        "繰り返しがちなミス: " + "; ".join(fp.recurring_mistakes)
+      )
+
+    if not entries:
+      return
+
+    # SemanticRetriever にインデックス（semantic_contexts と同様の方式）
+    semantic_retriever = getattr(self._clm, "_semantic_retriever", None)
+    if semantic_retriever is not None:
+      # 既存の semantic_contexts に追加する形でインデックス
+      await semantic_retriever.index_profile(
+        profile.profile_id, entries
+      )
+      logger.info(
+        "Indexed %d failure_patterns entries for profile_id=%s",
+        len(entries), profile.profile_id,
+      )
+    else:
+      # SemanticRetriever がない場合はローカルキャッシュに追加
+      local_contexts = getattr(self._clm, "_semantic_contexts_local", {})
+      if profile.profile_id in local_contexts:
+        local_contexts[profile.profile_id].update(entries)
+      else:
+        local_contexts[profile.profile_id] = entries
+      logger.info(
+        "Indexed %d failure_patterns entries locally for profile_id=%s",
+        len(entries), profile.profile_id,
+      )
 
   async def _resolve_profile_id(self, agent_id: str) -> str | None:
     """agent_id → profile_id を解決してキャッシュする。

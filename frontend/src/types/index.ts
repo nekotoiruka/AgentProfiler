@@ -26,3 +26,14 @@ export type {
   ProfileResponse,
   ApiErrorResponse,
 } from './api';
+export type {
+  ThreeLayerAnswer,
+  AnswerMetadata,
+  FeedbackPayload,
+  FeedbackRecord,
+  ModificationHistoryEntry,
+  OrderingChoice,
+  DecisionEngineData,
+  FeedbackListResponse,
+  FeedbackResponse,
+} from './decision';

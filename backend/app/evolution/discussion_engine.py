@@ -21,6 +21,7 @@ from app.evolution.memory_utils import (
   execute_search_memory,
 )
 from app.evolution.routing_engine import MEMORY_SEARCH_TOOL, RoutingEngine
+from app.models.profile import ProfileOutput
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,135 @@ class DiscussionEngine:
     self._routing_engine = routing_engine
     self._clm = context_layer_manager
     self._agent_manager = agent_manager
+
+  # トークン制限: 結合システムプロンプトの上限
+  _MAX_PROMPT_TOKENS = 4000
+
+  @staticmethod
+  def _estimate_tokens(text: str) -> int:
+    """テキストのトークン数を簡易推定する。
+
+    近似式: len(text) / 4（英語テキストの平均的なトークン/文字比率）。
+    日本語混在の場合はやや保守的だが安全側に倒す。
+    """
+    return max(1, len(text) // 4)
+
+  def _build_decision_prompt_section(self, profile: ProfileOutput) -> str:
+    """decision_model の priorities + reasoning_flow をプロンプトテキストに変換する。
+
+    decision_model がある場合は優先度降順リスト、
+    reasoning_flow がある場合はステップ番号リストを生成する。
+    どちらも無い場合は空文字列を返す。
+
+    Args:
+      profile: 対象エージェントの ProfileOutput
+
+    Returns:
+      プロンプトに注入するテキスト（空の場合もあり）
+    """
+    parts: list[str] = []
+
+    # decision_model → priorities セクション
+    if profile.decision_model is not None:
+      dm = profile.decision_model
+      # priority_weights の降順でソート
+      sorted_priorities = sorted(
+        dm.priority_weights.items(),
+        key=lambda x: x[1],
+        reverse=True,
+      )
+      parts.append("## My Decision Priorities")
+      for i, (name, weight) in enumerate(sorted_priorities, 1):
+        parts.append(f"{i}. {name} (weight: {weight})")
+      parts.append("")
+
+    # reasoning_flow → approach セクション
+    if profile.reasoning_flow is not None:
+      rf = profile.reasoning_flow
+      parts.append("## My Reasoning Approach")
+      for i, step in enumerate(rf.default_steps, 1):
+        parts.append(f"{i}. {step}")
+      parts.append("")
+
+    return "\n".join(parts)
+
+  def _build_conflict_directives(
+    self,
+    agent_profile: ProfileOutput,
+    other_profiles: list[ProfileOutput],
+  ) -> list[str]:
+    """対立する tradeoff 次元に対する立場維持指示を生成する。
+
+    自エージェントの tradeoff_tendencies と他エージェントの値を比較し、
+    差の絶対値 >= 0.4 の次元に対して立場維持ディレクティブを生成する。
+
+    Args:
+      agent_profile: 現在発話するエージェントの ProfileOutput
+      other_profiles: 他の参加エージェントの ProfileOutput リスト
+
+    Returns:
+      立場維持指示文字列のリスト（対立がなければ空リスト）
+    """
+    directives: list[str] = []
+
+    if agent_profile.decision_model is None:
+      return directives
+
+    my_tendencies = agent_profile.decision_model.tradeoff_tendencies
+    if not my_tendencies:
+      return directives
+
+    for other_profile in other_profiles:
+      if other_profile.decision_model is None:
+        continue
+      other_tendencies = other_profile.decision_model.tradeoff_tendencies
+      if not other_tendencies:
+        continue
+
+      # 共有する次元のうち差が 0.4 以上のものを抽出
+      for dimension, my_score in my_tendencies.items():
+        if dimension in other_tendencies:
+          # 浮動小数点誤差を回避するため2桁で丸める
+          diff = round(abs(my_score - other_tendencies[dimension]), 2)
+          if diff >= 0.4:
+            directive = (
+              f"Maintain your position on {dimension}: "
+              f"your tendency is {my_score}"
+            )
+            # 重複回避
+            if directive not in directives:
+              directives.append(directive)
+
+    return directives
+
+  def _build_decision_prompt_section_without_reasoning(
+    self, profile: ProfileOutput
+  ) -> str:
+    """priorities セクションのみ（reasoning_flow を除外）をプロンプトテキストに変換する。
+
+    トークン制限超過時の truncation 用。reasoning_flow を最初に削除する。
+
+    Args:
+      profile: 対象エージェントの ProfileOutput
+
+    Returns:
+      priorities セクションのみのテキスト（空の場合もあり）
+    """
+    parts: list[str] = []
+
+    if profile.decision_model is not None:
+      dm = profile.decision_model
+      sorted_priorities = sorted(
+        dm.priority_weights.items(),
+        key=lambda x: x[1],
+        reverse=True,
+      )
+      parts.append("## My Decision Priorities")
+      for i, (name, weight) in enumerate(sorted_priorities, 1):
+        parts.append(f"{i}. {name} (weight: {weight})")
+      parts.append("")
+
+    return "\n".join(parts)
 
   async def init_db(self) -> None:
     """discussions テーブルとインデックスを初期化する。"""
@@ -191,6 +321,18 @@ class DiscussionEngine:
         agent_display_names[agent_id] = agent_id
         agent_profile_ids[agent_id] = ""
 
+    # エージェントの ProfileOutput を事前キャッシュ（decision model 注入用）
+    agent_profiles: dict[str, ProfileOutput | None] = {}
+    for agent_id in agent_ids:
+      pid = agent_profile_ids[agent_id]
+      if pid:
+        try:
+          agent_profiles[agent_id] = self._clm.get_profile(pid)
+        except (KeyError, AttributeError):
+          agent_profiles[agent_id] = None
+      else:
+        agent_profiles[agent_id] = None
+
     # 議論の累積履歴（全ターンのテキスト）
     history: list[dict[str, str]] = []
 
@@ -209,6 +351,60 @@ class DiscussionEngine:
       system_prompt = self._build_system_prompt(
         agent_id, profile_id, theme, agent_ids, agent_display_names
       )
+
+      # Decision Engine データの注入（プロファイルに decision_model がある場合）
+      current_profile = agent_profiles.get(agent_id)
+      if current_profile is not None:
+        decision_section = self._build_decision_prompt_section(current_profile)
+
+        # 他エージェントの ProfileOutput を収集して対立指示を生成
+        other_agent_profiles = [
+          p for aid, p in agent_profiles.items()
+          if aid != agent_id and p is not None
+        ]
+        conflict_directives = self._build_conflict_directives(
+          current_profile, other_agent_profiles
+        )
+
+        # 追加セクションを組み立て
+        extra_parts: list[str] = []
+        if decision_section:
+          extra_parts.append(decision_section)
+        if conflict_directives:
+          extra_parts.append("## Position Directives")
+          for directive in conflict_directives:
+            extra_parts.append(f"- {directive}")
+          extra_parts.append("")
+
+        if extra_parts:
+          extra_text = "\n".join(extra_parts)
+          combined = system_prompt + "\n\n" + extra_text
+
+          # トークン制限遵守: 超過時は reasoning_flow セクションを削除
+          if self._estimate_tokens(combined) > self._MAX_PROMPT_TOKENS:
+            # reasoning_flow セクションを除去して再構築
+            decision_section_no_rf = self._build_decision_prompt_section_without_reasoning(
+              current_profile
+            )
+            extra_parts_truncated: list[str] = []
+            if decision_section_no_rf:
+              extra_parts_truncated.append(decision_section_no_rf)
+            if conflict_directives:
+              extra_parts_truncated.append("## Position Directives")
+              for directive in conflict_directives:
+                extra_parts_truncated.append(f"- {directive}")
+              extra_parts_truncated.append("")
+
+            if extra_parts_truncated:
+              combined = system_prompt + "\n\n" + "\n".join(extra_parts_truncated)
+            else:
+              combined = system_prompt
+
+            # それでも超過する場合は decision セクション自体を省略
+            if self._estimate_tokens(combined) > self._MAX_PROMPT_TOKENS:
+              combined = system_prompt
+
+          system_prompt = combined
 
       # ユーザーメッセージ: テーマ + これまでの会話履歴
       utterance = self._build_utterance(theme, history, display_name)

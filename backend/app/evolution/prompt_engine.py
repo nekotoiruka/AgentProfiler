@@ -113,6 +113,55 @@ DEFAULT_TEMPLATE = """\
 {% for item in do_not_list %}
 - {{ item }}
 {% endfor %}
+{% if decision_model %}
+
+## Decision Framework
+{% for priority in decision_model_sorted %}
+- {{ priority.name }} (weight: {{ priority.weight }})
+{% endfor %}
+{% if decision_model.tradeoff_tendencies %}
+
+### Tradeoff Tendencies
+{% for pair, score in decision_model.tradeoff_tendencies.items() %}
+- {{ pair }}: {{ score }}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% if failure_patterns %}
+
+## Known Weaknesses & Guardrails
+{% for trigger in failure_patterns.degradation_triggers %}
+⚠️ {{ trigger }}
+{% endfor %}
+{% for mistake in failure_patterns.recurring_mistakes %}
+🔄 {{ mistake }}
+{% endfor %}
+{% endif %}
+{% if context_adaptation %}
+
+## Context Adaptation Rules
+{% for mode_name, config in context_adaptation.modes.items() %}
+### {{ mode_name }}
+- Tone: {{ config.tone }}
+- Detail: {{ config.detail }}
+- Focus: {{ config.focus }}
+{% endfor %}
+{% if context_adaptation.switch_triggers %}
+Switch Conditions:
+{% for category, conditions in context_adaptation.switch_triggers.items() %}
+- {{ category }}: {{ conditions | join(", ") }}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% if reasoning_flow %}
+
+## Default Reasoning Process
+{% for step in reasoning_flow.default_steps %}
+{{ loop.index }}. {{ step }}
+{% endfor %}
+- Verification: {{ reasoning_flow.verification_method }}
+- Learning Style: {{ reasoning_flow.learning_style }}
+{% endif %}
 
 ## 重要な指示
 
@@ -190,8 +239,22 @@ class PromptEngine:
       "lifestyle_preferences": "ライフスタイルの好み",
     }
 
-    # テンプレートレンダリング
-    prompt = self._template.render(
+    # Decision Engine セクションの抽出
+    decision_model = profile.decision_model
+    failure_patterns = profile.failure_patterns
+    context_adaptation = profile.context_adaptation
+    reasoning_flow = profile.reasoning_flow
+
+    # decision_model_sorted: priority_weights を weight 降順にソートしたリスト
+    decision_model_sorted = self._build_decision_model_sorted(decision_model)
+
+    # トークン制限遵守のための段階的 truncation
+    # 優先順位（低い方から先に削除）:
+    #   1. reasoning_flow（最初に truncate）
+    #   2. context_adaptation
+    #   3. failure_patterns
+    #   4. decision_model（最後に truncate）
+    prompt = self._render_with_truncation(
       traits=traits,
       decision_style=profile.base_os.decision_style,
       do_not_list=profile.base_os.do_not_list,
@@ -200,6 +263,11 @@ class PromptEngine:
       semantic_contexts=profile.semantic_contexts if profile.semantic_contexts else None,
       lexical_tags=profile.lexical_tags if profile.lexical_tags else None,
       domain_labels=domain_labels,
+      decision_model=decision_model,
+      decision_model_sorted=decision_model_sorted,
+      failure_patterns=failure_patterns,
+      context_adaptation=context_adaptation,
+      reasoning_flow=reasoning_flow,
     )
 
     token_count = self._estimate_tokens(prompt)
@@ -212,6 +280,148 @@ class PromptEngine:
 
     logger.debug("Prompt generated: %d tokens", token_count)
     return PromptResult(prompt=prompt, token_count=token_count)
+
+  def _build_decision_model_sorted(self, decision_model) -> list[dict]:
+    """decision_model の priority_weights を weight 降順でソートする。
+
+    Returns:
+      [{name: str, weight: float}, ...] のリスト（weight 降順）
+    """
+    if decision_model is None:
+      return []
+    weights = decision_model.priority_weights
+    if not weights:
+      return []
+    return sorted(
+      [{"name": k, "weight": v} for k, v in weights.items()],
+      key=lambda x: x["weight"],
+      reverse=True,
+    )
+
+  def _render_with_truncation(
+    self,
+    *,
+    traits,
+    decision_style,
+    do_not_list,
+    communication_tone,
+    persona,
+    semantic_contexts,
+    lexical_tags,
+    domain_labels,
+    decision_model,
+    decision_model_sorted,
+    failure_patterns,
+    context_adaptation,
+    reasoning_flow,
+  ) -> str:
+    """トークン制限を考慮しつつテンプレートをレンダリングする。
+
+    max_tokens 超過時は低優先度セクションから順に除外して再レンダリングする。
+    truncation 順序: reasoning_flow → context_adaptation → failure_patterns → decision_model
+    """
+    # 全セクション込みでレンダリング
+    prompt = self._template.render(
+      traits=traits,
+      decision_style=decision_style,
+      do_not_list=do_not_list,
+      communication_tone=communication_tone,
+      persona=persona,
+      semantic_contexts=semantic_contexts,
+      lexical_tags=lexical_tags,
+      domain_labels=domain_labels,
+      decision_model=decision_model,
+      decision_model_sorted=decision_model_sorted,
+      failure_patterns=failure_patterns,
+      context_adaptation=context_adaptation,
+      reasoning_flow=reasoning_flow,
+    )
+
+    if self._estimate_tokens(prompt) <= self._max_tokens:
+      return prompt
+
+    # Step 1: reasoning_flow を除外
+    logger.debug("Truncating reasoning_flow section to fit token limit")
+    prompt = self._template.render(
+      traits=traits,
+      decision_style=decision_style,
+      do_not_list=do_not_list,
+      communication_tone=communication_tone,
+      persona=persona,
+      semantic_contexts=semantic_contexts,
+      lexical_tags=lexical_tags,
+      domain_labels=domain_labels,
+      decision_model=decision_model,
+      decision_model_sorted=decision_model_sorted,
+      failure_patterns=failure_patterns,
+      context_adaptation=context_adaptation,
+      reasoning_flow=None,
+    )
+
+    if self._estimate_tokens(prompt) <= self._max_tokens:
+      return prompt
+
+    # Step 2: context_adaptation を除外
+    logger.debug("Truncating context_adaptation section to fit token limit")
+    prompt = self._template.render(
+      traits=traits,
+      decision_style=decision_style,
+      do_not_list=do_not_list,
+      communication_tone=communication_tone,
+      persona=persona,
+      semantic_contexts=semantic_contexts,
+      lexical_tags=lexical_tags,
+      domain_labels=domain_labels,
+      decision_model=decision_model,
+      decision_model_sorted=decision_model_sorted,
+      failure_patterns=failure_patterns,
+      context_adaptation=None,
+      reasoning_flow=None,
+    )
+
+    if self._estimate_tokens(prompt) <= self._max_tokens:
+      return prompt
+
+    # Step 3: failure_patterns を除外
+    logger.debug("Truncating failure_patterns section to fit token limit")
+    prompt = self._template.render(
+      traits=traits,
+      decision_style=decision_style,
+      do_not_list=do_not_list,
+      communication_tone=communication_tone,
+      persona=persona,
+      semantic_contexts=semantic_contexts,
+      lexical_tags=lexical_tags,
+      domain_labels=domain_labels,
+      decision_model=decision_model,
+      decision_model_sorted=decision_model_sorted,
+      failure_patterns=None,
+      context_adaptation=None,
+      reasoning_flow=None,
+    )
+
+    if self._estimate_tokens(prompt) <= self._max_tokens:
+      return prompt
+
+    # Step 4: decision_model を除外（全 decision engine セクション無効）
+    logger.debug("Truncating decision_model section to fit token limit")
+    prompt = self._template.render(
+      traits=traits,
+      decision_style=decision_style,
+      do_not_list=do_not_list,
+      communication_tone=communication_tone,
+      persona=persona,
+      semantic_contexts=semantic_contexts,
+      lexical_tags=lexical_tags,
+      domain_labels=domain_labels,
+      decision_model=None,
+      decision_model_sorted=[],
+      failure_patterns=None,
+      context_adaptation=None,
+      reasoning_flow=None,
+    )
+
+    return prompt
 
   def _validate_base_os(self, profile: ProfileOutput) -> None:
     """base_os セクションの存在と必須フィールドを検証する。
