@@ -11,8 +11,8 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](./LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12+-3776ab.svg)](https://python.org)
 [![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883.svg)](https://vuejs.org)
-[![Tests: 549](https://img.shields.io/badge/Tests-549%20passed-brightgreen.svg)](#)
-[![PBT Properties: 36](https://img.shields.io/badge/PBT%20Properties-36-blueviolet.svg)](#)
+[![Tests: 810+](https://img.shields.io/badge/Tests-810%2B%20passed-brightgreen.svg)](#)
+[![PBT Properties: 52](https://img.shields.io/badge/PBT%20Properties-52-blueviolet.svg)](#)
 
 </div>
 
@@ -21,7 +21,7 @@
 ## 何が起きるか
 
 ```
-あなた → 47問に回答 → 4軸思考特性プロファイル生成 → AI分身エージェント誕生
+あなた → 88問に回答 → 4軸思考特性 + Decision Engine プロファイル生成 → AI分身エージェント誕生
                                                         ↓
                             1対1チャット ← 分身と対話 → マルチエージェント議論
                                                         ↓
@@ -32,7 +32,7 @@
 
 15分の質問に答えるだけで、**あなたの口調・判断軸・価値観・禁忌事項を内蔵したAIエージェント**が生まれます。そいつと話す。そいつ同士を戦わせる。自分の中の矛盾に気づく。
 
-**新機能: ペルソナレジストリ** — 分身を「公開」すると、他のユーザーの分身と対話・議論が可能に。AI同士のぶつかり合いから、人間には思いつかない視点を抽出してフィードバックします。
+**新機能: Decision Engine** — 88問の質問に統一3層パイプライン（Raw → Normalized → Policy）を適用。エージェントの行動規範を **Rule Hierarchy**（core_invariants > context_rules > exceptions > preferences）として集約し、再現性を最大化します。フィードバックループで重みが自動調整され、使うほどあなたに近づく。
 
 ---
 
@@ -40,7 +40,9 @@
 
 | | 機能 | 詳細 |
 |--|------|------|
-| 🧠 | **4軸プロファイリング** | 47問（4択 + LLM 自由記述分析）で思考特性を数値化。独自の正規化アルゴリズムで 0.0〜1.0 の精密スコアを算出 |
+| 🧠 | **4軸プロファイリング** | 88問（4択 + トレードオフ2択 + 順序付け + LLM 自由記述分析）で思考特性を数値化。独自の正規化アルゴリズムで 0.0〜1.0 の精密スコアを算出 |
+| 🎯 | **Decision Engine** | 意思決定モデル・失敗パターン・コンテキスト適応・推論フローを統合。全回答に3層パイプライン（Raw→Normalized→Policy）を適用し、Rule Hierarchy として4層集約 |
+| 🔄 | **フィードバックループ** | エージェント回答に対する「私らしい / 私ならこう言わない」評価を蓄積し、10件以上で自動重み調整。使うほど精度が向上 |
 | ⚡ | **分身エージェント生成** | プロファイルから AI 分身を生成。3層コンテキストアーキテクチャ（Base OS / Agent Skills / MCP）で人格を階層管理 |
 | 🌐 | **ペルソナレジストリ** | 分身を「公開」すると共有プールに登録。他ユーザーの分身とチャット・議論が可能に。公開には明示的な承認が必要 |
 | 💬 | **1対1チャット** | Responses API + Function Calling で推論。`search_memory` ツールがユーザーの実回答・タグ・行動傾向を動的検索し、人格に基づいた応答を生成 |
@@ -69,6 +71,7 @@
 │  Backend                                                         │
 │  FastAPI + Python 3.12+ + Pydantic v2                           │
 │  ├─ Profiling Engine (スコアリング + LLM 分析 + プロファイル生成)  │
+│  ├─ Decision Engine (3層パイプライン + Rule Hierarchy + Feedback) │
 │  └─ Evolution Runtime (14 モジュール)                            │
 │     Context Layer Manager │ Prompt Engine │ Hybrid Search        │
 │     Semantic Cache │ Routing Engine │ Agent Manager              │

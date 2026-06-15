@@ -53,8 +53,8 @@ onUnmounted(() => {
       </h1>
 
       <p class="text-sm sm:text-base text-[var(--color-muted-foreground)] max-w-md mx-auto mt-8 leading-[1.8]">
-        質問に答えるだけで、あなたの思考回路を持つAIが生まれる。<br />
-        そいつと話す。そいつ同士を話させる。<br />
+        88問の質問に答えるだけで、あなたの思考回路・判断軸・失敗パターンを持つAIが生まれる。<br />
+        そいつと話す。そいつ同士を話させる。フィードバックで育てる。<br />
         <strong class="text-[var(--color-foreground)]">自分を客観視する、まったく新しい体験。</strong>
       </p>
 
@@ -82,26 +82,33 @@ onUnmounted(() => {
         <h2 class="text-center text-xs tracking-[0.25em] uppercase text-[var(--color-muted-foreground)] mb-12 font-mono">
           what happens here
         </h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div class="glass rounded-2xl p-6 hover:glow transition-all duration-500 group">
             <div class="text-3xl mb-4 group-hover:scale-110 transition-transform">🧠</div>
             <h3 class="text-sm font-bold mb-2">思考をスキャン</h3>
             <p class="text-[11px] text-[var(--color-muted-foreground)] leading-relaxed">
-              47問の質問があなたの意思決定パターン・価値観・こだわりを4軸で数値化する。所要15分。
+              88問の質問があなたの意思決定パターン・価値観・失敗傾向を数値化する。所要20分。
+            </p>
+          </div>
+          <div class="glass rounded-2xl p-6 hover:glow transition-all duration-500 group">
+            <div class="text-3xl mb-4 group-hover:scale-110 transition-transform">🎯</div>
+            <h3 class="text-sm font-bold mb-2">行動規範を構築</h3>
+            <p class="text-[11px] text-[var(--color-muted-foreground)] leading-relaxed">
+              回答を3層パイプラインで「ルール」に変換。Rule Hierarchyとして4層に集約し、判断基準を形式化。
             </p>
           </div>
           <div class="glass rounded-2xl p-6 hover:glow transition-all duration-500 group">
             <div class="text-3xl mb-4 group-hover:scale-110 transition-transform">⚡</div>
             <h3 class="text-sm font-bold mb-2">分身が生まれる</h3>
             <p class="text-[11px] text-[var(--color-muted-foreground)] leading-relaxed">
-              プロファイルからAIエージェントを生成。あなたの口調・判断軸・禁止事項を内蔵した分身。
+              プロファイルからAIエージェントを生成。あなたの口調・判断軸・禁止事項・状況適応力を内蔵した分身。
             </p>
           </div>
           <div class="glass rounded-2xl p-6 hover:glow transition-all duration-500 group">
             <div class="text-3xl mb-4 group-hover:scale-110 transition-transform">🎭</div>
             <h3 class="text-sm font-bold mb-2">分身同士が議論する</h3>
             <p class="text-[11px] text-[var(--color-muted-foreground)] leading-relaxed">
-              複数の分身にテーマを投げると、勝手に議論が始まる。自分の中の多面性を目撃する体験。
+              複数の分身にテーマを投げると、各自の判断軸に基づいて自律議論が始まる。
             </p>
           </div>
         </div>
