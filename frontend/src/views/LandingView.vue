@@ -80,7 +80,9 @@ onUnmounted(() => {
         </h2>
         <p class="text-center text-sm text-[var(--color-muted-foreground)] mb-12 max-w-2xl mx-auto leading-relaxed">
           人間の判断プロセスを6層に分解し、各層を独立に構造化してエージェントに埋め込みます。<br />
-          従来のパーソナライズが「口調」だけだったのに対し、<strong class="text-[var(--color-foreground)]">判断層を中心に全6層を実装</strong>します。
+          従来のパーソナライズは「口調(L1) + RAG で知識参照(L2)」止まり。<br />
+          <strong class="text-[var(--color-foreground)]">Agent Profiler は L3（判断アルゴリズム）を中心に L4〜L6 を構造化する</strong>ことで、<br />
+          「知識はあるのに判断がおかしい」問題を解決します。
         </p>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
