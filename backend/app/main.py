@@ -17,6 +17,7 @@ load_dotenv(_env_path)
 
 from app.api.dependencies import init_services
 from app.api.routes import router
+from app.decision_engine.routes import decision_router
 from app.evolution.dependencies import init_evolution_services
 from app.evolution.routes import evolution_router
 
@@ -58,6 +59,7 @@ app.add_middleware(
 # ルーター登録
 app.include_router(router)
 app.include_router(evolution_router)
+app.include_router(decision_router)
 
 
 @app.get("/health")

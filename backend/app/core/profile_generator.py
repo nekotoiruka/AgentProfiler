@@ -1,12 +1,28 @@
 """Profile Generator: 正規化スコアから3層構造プロファイルJSONを生成"""
 
+from __future__ import annotations
+
+import json
 import re
 import threading
+from typing import TYPE_CHECKING
 
 from app.models.profile import BaseOS, ContextLayers, ProfileOutput
 from app.models.question import Question
 from app.models.scores import NormalizedScores
 from app.models.session import Answer
+
+if TYPE_CHECKING:
+  from app.decision_engine.models import (
+    AnswerMetadataSummary,
+    ContextAdaptationOutput,
+    DecisionModelOutput,
+    FailurePatternsOutput,
+    ReasoningFlowOutput,
+    RuleHierarchyOutput,
+  )
+  from app.decision_engine.rule_aggregator import RuleAggregator
+  from app.decision_engine.scorer import DecisionScorer
 
 
 # 軸名と両極のマッピング（独自用語: MBTIコードは使用しない）
@@ -143,8 +159,14 @@ class ProfileGenerator:
     normalized_scores: NormalizedScores,
     answers: list[Answer],
     questions: list[Question],
+    scorer: DecisionScorer | None = None,
+    aggregator: RuleAggregator | None = None,
   ) -> ProfileOutput:
-    """正規化スコアと回答データから完全なプロファイルを生成する"""
+    """正規化スコアと回答データから完全なプロファイルを生成する
+
+    scorer / aggregator が提供された場合、Decision Engine セクションも生成する。
+    提供されない場合は従来通りの base_os ベースプロファイルのみ生成（後方互換）。
+    """
     from app.models.profile import Persona, CommunicationTone
 
     profile_id = self._next_profile_id()
@@ -156,6 +178,26 @@ class ProfileGenerator:
     persona = self._build_persona(answers, questions)
     tone = self._build_communication_tone(answers, questions)
 
+    # Decision Engine sections (scorer が提供された場合のみ生成)
+    decision_model = None
+    failure_patterns = None
+    context_adaptation = None
+    reasoning_flow = None
+    decision_rules = None
+    rule_hierarchy = None
+    answer_metadata_summary = None
+
+    if scorer:
+      decision_model = self._build_decision_model(answers, scorer)
+      failure_patterns = self._build_failure_patterns(answers, scorer)
+      context_adaptation = self._build_context_adaptation(answers, scorer)
+      reasoning_flow = self._build_reasoning_flow(answers)
+      decision_rules = self._build_decision_rules(answers, questions, scorer)
+      answer_metadata_summary = self._build_answer_metadata_summary(answers)
+
+    if aggregator and decision_rules:
+      rule_hierarchy = self._build_rule_hierarchy(decision_rules, aggregator)
+
     return ProfileOutput(
       profile_id=profile_id,
       persona=persona,
@@ -164,6 +206,13 @@ class ProfileGenerator:
       lexical_tags=lexical_tags,
       semantic_contexts=semantic_contexts,
       context_layers=ContextLayers(),
+      decision_model=decision_model,
+      failure_patterns=failure_patterns,
+      context_adaptation=context_adaptation,
+      reasoning_flow=reasoning_flow,
+      decision_rules=decision_rules,
+      rule_hierarchy=rule_hierarchy,
+      answer_metadata_summary=answer_metadata_summary,
     )
 
   @classmethod
@@ -709,3 +758,280 @@ class ProfileGenerator:
       if _TAG_PATTERN.match(token):
         text = text.replace(token, "")
     return text
+
+  # ─── Decision Engine Builder Methods ───────────────────────────────
+
+  def _build_decision_model(
+    self, answers: list[Answer], scorer: DecisionScorer
+  ) -> DecisionModelOutput | None:
+    """decision_model + tradeoff_tendencies を構築する
+
+    dm_001〜dm_010 の回答から Priority Weight を累積・正規化し、
+    ts_001〜ts_008 の回答から Tradeoff Tendency スコアを収集する。
+    いずれかのカテゴリが未完了の場合は None を返す。
+    """
+    from app.decision_engine.models import DecisionModelOutput
+
+    # dm_ プレフィクスの回答を収集（choice_id ありのみ）
+    dm_answers = [
+      a for a in answers
+      if a.question_id.startswith("dm_") and a.choice_id
+    ]
+    if len(dm_answers) < 10:
+      return None  # 部分完了時は生成しない
+
+    # Priority weight 累積
+    accumulated: dict[str, int] = {}
+    for answer in dm_answers:
+      try:
+        weights = scorer.score_decision_model(answer.question_id, answer.choice_id)
+        for label, weight in weights.items():
+          accumulated[label] = accumulated.get(label, 0) + weight
+      except Exception:
+        continue
+
+    priority_weights = scorer.normalize_weights(accumulated)
+    # 重み降順で優先順位リストを構築
+    priorities = sorted(
+      priority_weights.keys(),
+      key=lambda k: priority_weights[k],
+      reverse=True,
+    )
+
+    # Tradeoff tendencies（ts_ プレフィクス）
+    ts_answers = [
+      a for a in answers
+      if a.question_id.startswith("ts_") and a.choice_id
+    ]
+    if len(ts_answers) < 8:
+      return None  # トレードオフも全問必要
+
+    tradeoff_tendencies: dict[str, float] = {}
+    for answer in ts_answers:
+      try:
+        pair, score = scorer.score_tradeoff(answer.question_id, answer.choice_id)
+        tradeoff_tendencies[pair] = score
+      except Exception:
+        continue
+
+    # Escalation rules: dm_007 由来（簡略化: マッピングから取得する設計だが現時点は空）
+    escalation_rules: list[str] = []
+
+    # Auto approve scope: dm_008 由来（同上）
+    auto_approve_scope: list[str] = []
+
+    return DecisionModelOutput(
+      priorities=priorities[:10],
+      priority_weights=priority_weights,
+      escalation_rules=escalation_rules,
+      auto_approve_scope=auto_approve_scope,
+      tradeoff_tendencies=tradeoff_tendencies,
+    )
+
+  def _build_failure_patterns(
+    self, answers: list[Answer], scorer: DecisionScorer
+  ) -> FailurePatternsOutput | None:
+    """failure_patterns を構築する
+
+    fp_001〜fp_007 の回答を4サブカテゴリに分類する。
+    7問未満の場合は None を返す。
+    """
+    from app.decision_engine.models import FailurePatternsOutput
+
+    fp_answers = [
+      a for a in answers
+      if a.question_id.startswith("fp_") and a.choice_id
+    ]
+    if len(fp_answers) < 7:
+      return None
+
+    result: dict[str, list[str]] = {
+      "degradation_triggers": [],
+      "procrastination_patterns": [],
+      "overconfidence_conditions": [],
+      "recurring_mistakes": [],
+    }
+
+    for answer in fp_answers:
+      try:
+        subcategory, label = scorer.score_failure_pattern(
+          answer.question_id, answer.choice_id
+        )
+        if subcategory in result:
+          result[subcategory].append(label)
+      except Exception:
+        continue
+
+    return FailurePatternsOutput(**result)
+
+  def _build_context_adaptation(
+    self, answers: list[Answer], scorer: DecisionScorer
+  ) -> ContextAdaptationOutput | None:
+    """context_adaptation を構築する
+
+    ca_001〜ca_005 の回答からモード設定と切替トリガーを導出する。
+    5問未満の場合は None を返す。
+    """
+    from app.decision_engine.models import ContextAdaptationOutput
+
+    ca_answers = [
+      a for a in answers
+      if a.question_id.startswith("ca_") and a.choice_id
+    ]
+    if len(ca_answers) < 5:
+      return None
+
+    modes: dict[str, dict[str, str]] = {}
+    switch_triggers: dict[str, list[str]] = {
+      "audience": [],
+      "urgency": [],
+      "mental_state": [],
+    }
+
+    for answer in ca_answers:
+      try:
+        mode_result = scorer.score_context_adaptation(
+          answer.question_id, answer.choice_id
+        )
+        for mode_name, config in mode_result.items():
+          modes[mode_name] = config
+      except Exception:
+        continue
+
+    return ContextAdaptationOutput(
+      modes=modes,
+      switch_triggers=switch_triggers,
+    )
+
+  def _build_reasoning_flow(
+    self, answers: list[Answer]
+  ) -> ReasoningFlowOutput | None:
+    """reasoning_flow を構築する
+
+    rf_001〜rf_005 の回答からデフォルト思考ステップ・検証方法・学習スタイルを導出する。
+    5問未満の場合は None を返す。
+    """
+    from app.decision_engine.models import ReasoningFlowOutput
+
+    rf_answers = [
+      a for a in answers
+      if a.question_id.startswith("rf_")
+    ]
+    if len(rf_answers) < 5:
+      return None
+
+    # ordering 回答（rf_001, rf_002）から default_steps を抽出
+    default_steps: list[str] = []
+    for answer in rf_answers:
+      if answer.question_id in ("rf_001", "rf_002"):
+        if answer.choice_id:
+          try:
+            steps = json.loads(answer.choice_id)
+            if isinstance(steps, list) and len(steps) >= 4:
+              default_steps = steps
+              break
+          except (json.JSONDecodeError, TypeError):
+            pass
+
+    # フォールバック: 最低4ステップ必要
+    if not default_steps or len(default_steps) < 4:
+      default_steps = ["情報収集", "問題定義", "解決案生成", "評価・実行"]
+
+    # verification_method (rf_003 由来)
+    verification_method = "レビューと検証"
+    for answer in rf_answers:
+      if answer.question_id == "rf_003" and answer.text:
+        verification_method = answer.text[:100]
+        break
+
+    # learning_style (rf_004 由来)
+    learning_style = "実践的学習"
+    for answer in rf_answers:
+      if answer.question_id == "rf_004" and answer.text:
+        learning_style = answer.text[:100]
+        break
+
+    return ReasoningFlowOutput(
+      default_steps=default_steps[:6],
+      verification_method=verification_method,
+      learning_style=learning_style,
+    )
+
+  def _build_decision_rules(
+    self,
+    answers: list[Answer],
+    questions: list[Question],
+    scorer: DecisionScorer,
+  ) -> list[dict] | None:
+    """全質問のポリシールールを収集する
+
+    各回答から Mapping Dictionary の policy_text を取得し、
+    ルールリストとして返す。ルールが1件もない場合は None。
+    """
+    question_map = {q.id: q for q in questions}
+    rules: list[dict] = []
+
+    for answer in answers:
+      if not answer.choice_id:
+        continue
+      question = question_map.get(answer.question_id)
+      if not question:
+        continue
+
+      # Mapping Dictionary からポリシー情報を取得
+      try:
+        entry = scorer._get_entry(answer.question_id, answer.choice_id)
+        if entry.policy_text:
+          rules.append({
+            "question_id": answer.question_id,
+            "rule": entry.policy_text,
+            "confidence": 0.6,  # デフォルト確信度
+            "is_core": False,
+            "permanence": "permanent",
+            "normalization_tags": [],
+          })
+      except Exception:
+        continue
+
+    return rules if rules else None
+
+  def _build_rule_hierarchy(
+    self, decision_rules: list[dict], aggregator: RuleAggregator
+  ) -> RuleHierarchyOutput | None:
+    """RuleAggregator 経由で全ルールを4層ヒエラルキーに集約する"""
+    from app.decision_engine.models import RuleHierarchyOutput
+
+    if not decision_rules:
+      return None
+
+    hierarchy = aggregator.aggregate(decision_rules)
+    return RuleHierarchyOutput(
+      core_invariants=hierarchy.core_invariants,
+      context_rules=hierarchy.context_rules,
+      exceptions=hierarchy.exceptions,
+      preferences=hierarchy.preferences,
+    )
+
+  def _build_answer_metadata_summary(
+    self, answers: list[Answer]
+  ) -> AnswerMetadataSummary | None:
+    """回答メタデータの統計サマリを構築する
+
+    回答数・コアルール数・コンテキスト依存数・平均確信度・高曖昧度数を集計する。
+    回答が0件の場合は None を返す。
+    """
+    from app.decision_engine.models import AnswerMetadataSummary
+
+    if not answers:
+      return None
+
+    total = len(answers)
+    # 現時点ではメタデータは Answer モデルに含まれないためデフォルト値で集計
+    # 将来的に AnswerPipeline と統合時に実データを参照する
+    return AnswerMetadataSummary(
+      total_answers=total,
+      core_rule_count=0,
+      contextual_count=0,
+      average_confidence=0.6,
+      high_ambiguity_count=0,
+    )
