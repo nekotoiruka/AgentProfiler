@@ -6,7 +6,10 @@ from app.models.question import Choice, Question, Category
 from app.models.mapping import (
   MappingScores,
   MappingEntry,
+  NormalizedTag,
+  ModeConfig,
   AxisBound,
+  AxisPolarity,
   TheoreticalBounds,
   MappingMetadata,
   MappingDictionary,
@@ -39,7 +42,10 @@ __all__ = [
   # Mapping
   "MappingScores",
   "MappingEntry",
+  "NormalizedTag",
+  "ModeConfig",
   "AxisBound",
+  "AxisPolarity",
   "TheoreticalBounds",
   "MappingMetadata",
   "MappingDictionary",
