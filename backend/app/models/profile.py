@@ -2,6 +2,15 @@
 
 from pydantic import BaseModel, Field
 
+from app.decision_engine.models import (
+  AnswerMetadataSummary,
+  ContextAdaptationOutput,
+  DecisionModelOutput,
+  FailurePatternsOutput,
+  ModificationHistoryEntry,
+  ReasoningFlowOutput,
+  RuleHierarchyOutput,
+)
 from app.models.scores import NormalizedScores
 
 
@@ -27,6 +36,10 @@ class ContextLayers(BaseModel):
   """
 
   base_os: int = 1
+  decision_model: int = 1
+  failure_patterns: int = 1
+  context_adaptation: int = 2
+  reasoning_flow: int = 2
   lexical_tags: int = 2
   semantic_contexts: int = 3
 
@@ -77,3 +90,12 @@ class ProfileOutput(BaseModel):
   lexical_tags: list[str] = Field(..., min_length=5, max_length=500)
   semantic_contexts: dict[str, str]
   context_layers: ContextLayers = Field(default_factory=ContextLayers)
+  # Decision Engine フィールド
+  decision_model: DecisionModelOutput | None = None
+  failure_patterns: FailurePatternsOutput | None = None
+  context_adaptation: ContextAdaptationOutput | None = None
+  reasoning_flow: ReasoningFlowOutput | None = None
+  decision_rules: list[dict] | None = None
+  rule_hierarchy: RuleHierarchyOutput | None = None
+  modification_history: list[ModificationHistoryEntry] | None = None
+  answer_metadata_summary: AnswerMetadataSummary | None = None
